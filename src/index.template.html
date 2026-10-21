@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>주간실험실 JUGAN LAB</title>
+  <meta name="description" content="주간실험실은 매주 하나씩 쓸모 있는 웹 서비스를 만들어 공개하는 1인 개발 연구소입니다. 운영 중인 서비스와 개발 기록을 소개합니다.">
+  <link rel="canonical" href="https://juganlab.com/">
+  <meta property="og:title" content="주간실험실 JUGAN LAB">
+  <meta property="og:description" content="매주 하나씩, 쓸모 있는 것을 만들어 공개합니다.">
+  <meta property="og:url" content="https://juganlab.com/">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#f6f3ec" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#12161e" media="(prefers-color-scheme: dark)">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script>try{var t=localStorage.getItem("jl-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+  <script src="app.js" defer></script>
+<!-- @adHead -->
+</head>
+<body>
+  <!-- 마우스를 따라 모눈을 밝히는 조명과 좌표 표시(장식) -->
+  <div class="grid-light" aria-hidden="true"></div>
+  <div class="coords mono" aria-hidden="true">X <span id="cx">0000</span> · Y <span id="cy">0000</span></div>
+
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="index.html" aria-label="주간실험실 홈">
+        <span class="brand-mark" aria-hidden="true">JL</span>
+        주간실험실
+      </a>
+      <nav class="nav" aria-label="주요 메뉴">
+        <a href="#experiments">서비스</a>
+        <a href="#log">실험 일지</a>
+        <a href="#about">소개</a>
+        <button type="button" class="kbd-btn" id="open-palette" aria-haspopup="dialog">
+          <span class="mono">명령</span> <kbd>Ctrl K</kbd>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <p class="hero-label mono reveal">Jugan Lab · 1인 개발 연구소</p>
+      <h1 id="hero-title" class="reveal">매주 하나씩, <em>쓸모 있는 것</em>을 만듭니다.</h1>
+      <p class="hero-lede reveal">
+        주간실험실은 일상과 공부에서 불편했던 것을 작은 웹 서비스로 만들어 공개하는 곳입니다.
+        만든 서비스는 각자의 주소에서 누구나 무료로 쓸 수 있고, 이 페이지에서 한눈에 모아 볼 수 있습니다.
+      </p>
+      <div class="hero-meta mono reveal">
+<!-- @heroMeta -->
+        <span class="hint">팁 · <kbd>/</kbd> 를 눌러 보세요</span>
+      </div>
+    </section>
+
+    <section id="experiments" class="section wrap" aria-labelledby="exp-title">
+      <div class="section-head">
+        <span class="mono">01 / Experiments</span>
+        <h2 id="exp-title">지금 쓸 수 있는 서비스</h2>
+      </div>
+
+      <div class="experiments">
+<!-- @services -->
+      </div>
+    </section>
+
+<!-- @adHub -->
+
+    <section id="log" class="section wrap" aria-labelledby="log-title">
+      <div class="section-head">
+        <span class="mono">02 / Lab log</span>
+        <h2 id="log-title">실험 일지</h2>
+      </div>
+
+      <div class="log-filters" role="group" aria-label="서비스별로 보기">
+<!-- @logFilters -->
+      </div>
+
+      <ol class="timeline" id="timeline">
+<!-- @log -->
+      </ol>
+      <button type="button" class="log-more mono" id="log-more" hidden>이전 기록 더 보기</button>
+    </section>
+
+    <section id="about" class="section wrap" aria-labelledby="about-title">
+      <div class="section-head">
+        <span class="mono">03 / About</span>
+        <h2 id="about-title">이렇게 만듭니다</h2>
+      </div>
+
+      <div class="principles">
+        <article class="principle">
+          <span class="mono">Rule 01</span>
+          <h3>작게, 빨리 공개</h3>
+          <p>완벽해질 때까지 붙잡고 있지 않습니다. 쓸 수 있는 상태가 되면 먼저 공개하고, 써 본 사람들의 의견으로 고쳐 나갑니다.</p>
+        </article>
+        <article class="principle">
+          <span class="mono">Rule 02</span>
+          <h3>누구나 무료로</h3>
+          <p>핵심 기능은 가입 없이도 쓸 수 있게 만듭니다. 서비스 운영비는 페이지에 실리는 광고로 충당합니다.</p>
+        </article>
+        <article class="principle">
+          <span class="mono">Rule 03</span>
+          <h3>직접 확인한 내용만</h3>
+          <p>학습 자료처럼 정확해야 하는 내용은 공식 문서를 기준으로 검토하고, 틀린 곳은 알려 주시면 바로 고칩니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="contact" class="section wrap" aria-labelledby="contact-title">
+      <div class="contact">
+        <div>
+          <h2 id="contact-title">제안이나 오류 제보는 언제든지</h2>
+          <p>서비스 이용 문의, 콘텐츠 오류, 협업 제안 모두 메일로 받습니다.</p>
+        </div>
+        <a class="mail" href="mailto:wkdrndydtlr@gmail.com">메일 보내기</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span>© 2026 주간실험실 JUGAN LAB</span>
+      <a href="privacy.html">개인정보처리방침</a>
+    </div>
+  </footer>
+
+  <!-- 명령 팔레트: Ctrl/⌘+K 또는 / 로 연다. 모든 명령은 페이지의 일반 링크로도 갈 수 있다. -->
+  <dialog class="palette" id="palette" aria-labelledby="palette-title">
+    <div class="palette-head mono">
+      <span id="palette-title">jugan-lab ~ 콘솔</span>
+      <span class="palette-esc"><kbd>Esc</kbd> 닫기</span>
+    </div>
+    <div class="palette-out mono" id="palette-out" role="log" aria-live="polite"></div>
+    <form class="palette-form mono" id="palette-form" autocomplete="off">
+      <label for="palette-input" class="prompt">$</label>
+      <input id="palette-input" type="text" spellcheck="false" placeholder="help 를 입력해 보세요" aria-describedby="palette-hints">
+    </form>
+    <div class="palette-hints" id="palette-hints"></div>
+  </dialog>
+
+  <!-- 콘솔 명령(ls, open …)이 쓰는 서비스 목록. 빌드 때 data/services.json 에서 채운다. -->
+  <script type="application/json" id="lab-data"><!-- @data --></script>
+</body>
+</html>
