@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const SRC = join(ROOT, 'src');
 const DIST = join(ROOT, 'dist');
-const STATIC_FILES = ['styles.css', 'app.js'];
+const STATIC_FILES = ['styles.css', 'app.js', 'favicon.ico', 'icon.svg', 'apple-touch-icon.png', 'icon-512.png'];
 
 // 광고 설정은 Vercel 환경변수로만 받는다. 값이 없으면 광고 스크립트·광고 칸·ads.txt 를 하나도 만들지 않는다.
 //   ADSENSE_CLIENT    게시자 ID (ca-pub-16자리)
