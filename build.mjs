@@ -5,6 +5,9 @@
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { renderAbout, renderLogIndex, renderPost } from './lib/pages.mjs';
+import { readPosts } from './lib/posts.mjs';
+import { checkInternalLinks, renderRobots, renderSitemap } from './lib/seo.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const SRC = join(ROOT, 'src');
@@ -32,7 +35,8 @@ const dotted = (isoDate) => isoDate.replaceAll('-', '.');
 
 // ── 검증: 잘못된 데이터는 조용히 넘기지 않고 빌드를 멈춘다 ──
 
-function validate(services, log) {
+function validate(services, log, posts) {
+  const slugs = new Set(posts.map((p) => p.slug));
   const errors = [];
   const ids = new Set();
 
@@ -57,6 +61,7 @@ function validate(services, log) {
     if (!DATE_RE.test(e.date ?? '')) errors.push(`${at}: date 는 YYYY-MM-DD 형식이어야 합니다`);
     if (!ids.has(e.service)) errors.push(`${at}: service "${e.service}" 가 services.json 에 없습니다`);
     if (!e.title || !e.body) errors.push(`${at}: title 과 body 가 필요합니다`);
+    if (e.post && !slugs.has(e.post)) errors.push(`${at}: post "${e.post}" 글이 data/posts 에 없습니다`);
   });
 
   if (errors.length) {
@@ -118,8 +123,12 @@ function renderLogEntry(entry, serviceName) {
           <time class="mono" datetime="${entry.date}">${dotted(entry.date)}</time>
           <div>
             <span class="entry-tag mono">${tag}</span>
-            <h3>${escapeHtml(entry.title)}</h3>
-            <p>${escapeHtml(entry.body)}</p>
+            <h3>${entry.post ? `<a href="/log/${entry.post}">${escapeHtml(entry.title)}</a>` : escapeHtml(entry.title)}</h3>
+            <p>${escapeHtml(entry.body)}</p>${
+              entry.post
+                ? `\n            <a class="entry-more mono" href="/log/${entry.post}">개발기 읽기 <span aria-hidden="true">→</span></a>`
+                : ''
+            }
           </div>
         </li>`;
 }
@@ -196,12 +205,39 @@ function fillTemplate(file, parts) {
   return html;
 }
 
+// ── 개발기 글 ──
+
+// /log 는 log.html, /log/<slug> 는 log/<slug>.html (vercel.json 의 cleanUrls 로 .html 없이 열린다)
+function writePosts(posts, nameOf, adHead) {
+  writeFileSync(join(DIST, 'log.html'), renderLogIndex(posts, nameOf, adHead));
+  mkdirSync(join(DIST, 'log'), { recursive: true });
+  posts.forEach((post, i) => {
+    writeFileSync(join(DIST, 'log', `${post.slug}.html`), renderPost(post, posts[i - 1], posts[i + 1], nameOf, adHead));
+  });
+}
+
+// 날짜를 아는 페이지만 lastmod 를 단다. 모르는 날짜를 지어내지 않는다.
+const PRIVACY_EFFECTIVE = '2026-10-21'; // src/privacy.html 의 시행일
+
+function sitemapPages(sortedLog, posts) {
+  const latest = (dates) => dates.filter(Boolean).sort().at(-1);
+  const postDate = (p) => p.updated || p.date;
+  return [
+    { path: '/', lastmod: latest([...sortedLog.map((e) => e.date), ...posts.map(postDate)]) },
+    { path: '/about' },
+    { path: '/privacy', lastmod: PRIVACY_EFFECTIVE },
+    { path: '/log', lastmod: latest(posts.map(postDate)) },
+    ...[...posts].reverse().map((p) => ({ path: `/log/${p.slug}`, lastmod: postDate(p) })),
+  ];
+}
+
 // ── 조립 ──
 
 function build() {
   const services = readJson('services.json');
   const log = readJson('log.json');
-  validate(services, log);
+  const posts = readPosts(join(ROOT, 'data', 'posts'), new Set(services.map((s) => s.id)));
+  validate(services, log, posts);
   const ads = readAdConfig(process.env);
 
   const nameOf = Object.fromEntries(services.map((s) => [s.id, s.name]));
@@ -221,12 +257,17 @@ function build() {
   mkdirSync(DIST, { recursive: true });
   writeFileSync(join(DIST, 'index.html'), fillTemplate('index.template.html', parts));
   writeFileSync(join(DIST, 'privacy.html'), fillTemplate('privacy.html', { adHead: parts.adHead }));
+  writeFileSync(join(DIST, 'about.html'), renderAbout(services, posts, parts.adHead));
+  writePosts(posts, nameOf, parts.adHead);
   for (const file of STATIC_FILES) cpSync(join(SRC, file), join(DIST, file));
   const adsTxt = renderAdsTxt(ads);
   if (adsTxt) writeFileSync(join(DIST, 'ads.txt'), adsTxt);
+  writeFileSync(join(DIST, 'robots.txt'), renderRobots());
+  writeFileSync(join(DIST, 'sitemap.xml'), renderSitemap(sitemapPages(sortedLog, posts)));
+  checkInternalLinks(DIST);
 
   const adState = !ads.client ? '광고 꺼짐' : ads.slot ? '광고 스크립트+광고 칸+ads.txt' : '광고 스크립트+ads.txt(광고 칸 없음)';
-  console.log(`빌드 완료: 서비스 ${services.length}개, 실험 일지 ${log.length}개, ${adState} → dist/`);
+  console.log(`빌드 완료: 서비스 ${services.length}개, 실험 일지 ${log.length}개, 개발기 ${posts.length}편, ${adState} → dist/`);
 }
 
 try {
