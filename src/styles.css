@@ -1314,3 +1314,354 @@ kbd {
     padding: 18px;
   }
 }
+
+/* ── 마켓: 필터·검색·카드 하단 버튼·상세 창 ───────────────── */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.exp[hidden],
+.market-empty[hidden] {
+  display: none;
+}
+
+.market-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.market-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.market-filters:empty {
+  display: none;
+}
+
+.market-search input {
+  width: min(320px, 100%);
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.market-search input:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.market-empty {
+  margin: 0 0 24px;
+  color: var(--ink-soft);
+}
+
+.exp {
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease), border-color 0.35s var(--ease);
+}
+
+.exp:not(.pending):hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--signal) 45%, var(--line));
+}
+
+.exp .tags {
+  margin-top: 20px;
+}
+
+.exp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.exp-detail,
+.exp-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.exp-detail {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.exp-detail:hover,
+.exp-detail:focus-visible {
+  background: var(--signal);
+  border-color: var(--signal);
+  outline: none;
+}
+
+.exp-link {
+  background: transparent;
+  color: var(--ink);
+}
+
+.exp-link:hover,
+.exp-link:focus-visible {
+  border-color: var(--signal);
+  color: var(--signal);
+  outline: none;
+}
+
+.exp.pending .exp-actions {
+  padding-top: 24px;
+}
+
+.exp.pending .exp-detail {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.exp.pending .exp-detail:hover,
+.exp.pending .exp-detail:focus-visible {
+  border-color: var(--signal);
+  color: var(--signal);
+  background: transparent;
+}
+
+/* 상세 창 */
+
+.detail {
+  width: min(720px, 100% - 24px);
+  max-height: min(86vh, 900px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.5);
+  overflow: auto;
+}
+
+.detail::backdrop {
+  background: rgba(10, 14, 22, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.detail[open] {
+  animation: detail-in 0.35s var(--ease);
+}
+
+@keyframes detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+}
+
+.detail-close {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+
+.detail-close button {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.detail-close button:hover,
+.detail-close button:focus-visible {
+  border-color: var(--signal);
+  color: var(--ink);
+}
+
+.detail-close kbd {
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+.detail-body {
+  padding: 8px clamp(20px, 5vw, 40px) 36px;
+}
+
+.detail-kind {
+  margin: 20px 0 0;
+  color: var(--signal);
+}
+
+.detail h2 {
+  margin: 8px 0 0;
+  font-size: clamp(1.8rem, 1.4rem + 1.6vw, 2.6rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.detail-summary {
+  margin: 16px 0 0;
+  color: var(--ink-soft);
+}
+
+.detail h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 36px 0 14px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ink);
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+}
+
+.detail .count {
+  color: var(--ink-faint);
+}
+
+.feature-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.feature-list li {
+  display: grid;
+  gap: 2px;
+  padding-left: 18px;
+  border-left: 3px solid var(--signal-soft);
+}
+
+.feature-list strong {
+  font-weight: 600;
+}
+
+.feature-list span {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.group + .group {
+  margin-top: 18px;
+}
+
+.group h4 {
+  margin: 0 0 8px;
+  color: var(--ink-faint);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chips li {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.steps {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.steps li {
+  position: relative;
+  padding-left: 42px;
+  counter-increment: step;
+  color: var(--ink-soft);
+}
+
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 36px;
+}
+
+.ghost-link {
+  padding: 12px 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ghost-link:hover,
+.ghost-link:focus-visible {
+  border-color: var(--signal);
+  color: var(--signal);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail[open] {
+    animation: none;
+  }
+}

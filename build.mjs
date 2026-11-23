@@ -23,6 +23,8 @@ const ADSENSE_SLOT_RE = /^\d{6,20}$/;
 const GOOGLE_CERT_AUTHORITY_ID = 'f08c47fec0942fa0';
 
 const STATUS_LABEL = { live: '운영 중', beta: '베타', building: '준비 중' };
+const TYPE_LABEL = { web: '웹 서비스', extension: '크롬 확장', guide: '도감' };
+const statusText = (s) => s.statusLabel || STATUS_LABEL[s.status];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ID_RE = /^[a-z0-9-]+$/;
 
@@ -51,6 +53,16 @@ function validate(services, log, posts) {
     if (!s.summary) errors.push(`${at}: summary 가 비어 있습니다`);
     if (s.since && !DATE_RE.test(s.since)) errors.push(`${at}: since 는 YYYY-MM-DD 형식이어야 합니다`);
     if (s.ping && !/^https:\/\//.test(s.ping)) errors.push(`${at}: ping 은 https:// 주소여야 합니다`);
+    if (s.type && !TYPE_LABEL[s.type]) errors.push(`${at}: type 은 ${Object.keys(TYPE_LABEL).join(' / ')} 중 하나여야 합니다`);
+    for (const f of s.features ?? []) {
+      if (!f.title) errors.push(`${at}: features 항목에는 title 이 필요합니다`);
+    }
+    for (const g of s.groups ?? []) {
+      if (!g.name || !Array.isArray(g.items) || !g.items.length) errors.push(`${at}: groups 항목에는 name 과 items 가 필요합니다`);
+    }
+    for (const l of s.links ?? []) {
+      if (!l.label || !/^https:\/\//.test(l.url ?? '')) errors.push(`${at}: links 항목은 label 과 https:// url 이 필요합니다`);
+    }
     for (const stat of s.stats ?? []) {
       if (!stat.label || !Number.isFinite(stat.value)) errors.push(`${at}: stats 항목은 label 과 숫자 value 가 필요합니다`);
     }
@@ -81,27 +93,75 @@ function renderStats(stats = []) {
   return `\n          <dl class="stats">${cells}</dl>`;
 }
 
+const typeOf = (s) => s.type || 'web';
+
+function renderTags(tags = []) {
+  if (!tags.length) return '';
+  return `
+          <ul class="tags">${tags.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`;
+}
+
 function renderService(s, index) {
   const domain = s.url ? new URL(s.url).host : '';
   const ping = s.ping && s.status !== 'building' ? ` data-ping="${escapeHtml(s.ping)}"` : '';
   const statusClass = s.status === 'building' ? 'status' : `status ${s.status}`;
   const classes = ['exp', s.featured && 'featured', s.status === 'building' && 'pending'].filter(Boolean).join(' ');
-  const inner = `
+  const search = [s.name, s.summary, ...(s.tags ?? [])].join(' ').toLowerCase();
+  const open = s.url && s.status !== 'building'
+    ? `<a class="exp-link" href="${escapeHtml(s.url)}">열기 <span aria-hidden="true">↗</span></a>`
+    : '';
+  return `        <article class="${classes}" id="svc-${s.id}" data-type="${typeOf(s)}" data-search="${escapeHtml(search)}">
           <div class="exp-top mono">
-            <span>${code(index)}</span>
-            <span class="${statusClass}"${ping}>${STATUS_LABEL[s.status]}</span>
+            <span>${code(index)} · ${TYPE_LABEL[typeOf(s)]}</span>
+            <span class="${statusClass}"${ping}>${escapeHtml(statusText(s))}</span>
           </div>
           <h3>${escapeHtml(s.name)}</h3>
           ${domain ? `<span class="domain">${escapeHtml(domain)}</span>` : ''}
-          <p>${escapeHtml(s.summary)}</p>${renderStats(s.stats)}`;
+          <p>${escapeHtml(s.summary)}</p>${renderTags(s.tags)}${renderStats(s.stats)}
+          <div class="exp-actions">
+            <button type="button" class="exp-detail" data-detail="${s.id}" aria-haspopup="dialog">기능·사용법 보기 <span aria-hidden="true">→</span></button>
+            ${open}
+          </div>
+        </article>`;
+}
 
-  // 준비 중인 서비스는 아직 갈 곳이 없으므로 링크가 아닌 카드로 둔다.
-  if (s.status === 'building' || !s.url) {
-    return `        <div class="${classes}" id="svc-${s.id}">${inner}\n        </div>`;
-  }
-  return `        <a class="${classes}" id="svc-${s.id}" href="${escapeHtml(s.url)}">${inner}
-          <span class="exp-cta">${escapeHtml(s.name)} 열기 <span aria-hidden="true">→</span></span>
-        </a>`;
+// 카드마다 기능·사용법 상세 창을 만든다. 스크립트 없이도 검색 로봇이 읽을 수 있게 빌드 때 HTML 로 둔다.
+function renderDetail(s) {
+  const features = (s.features ?? []).length
+    ? `<h3>주요 기능</h3>
+        <ul class="feature-list">${s.features.map((f) => `<li><strong>${escapeHtml(f.title)}</strong>${f.desc ? `<span>${escapeHtml(f.desc)}</span>` : ''}</li>`).join('')}</ul>`
+    : '';
+  const groups = (s.groups ?? []).length
+    ? `<h3>다루는 내용 <span class="count mono">${s.groups.reduce((n, g) => n + g.items.length, 0)}개</span></h3>
+        ${s.groups.map((g) => `<div class="group"><h4 class="mono">${escapeHtml(g.name)}</h4><ul class="chips">${g.items.map((i) => `<li>${escapeHtml(i)}</li>`).join('')}</ul></div>`).join('')}`
+    : '';
+  const howtoTitle = s.status === 'building' ? '이렇게 쓰게 됩니다' : '사용 방법';
+  const howto = (s.howto ?? []).length
+    ? `<h3>${howtoTitle}</h3>
+        <ol class="steps">${s.howto.map((h) => `<li>${escapeHtml(h)}</li>`).join('')}</ol>`
+    : '';
+  const actions = [
+    s.url && s.status !== 'building' ? `<a class="mail" href="${escapeHtml(s.url)}">${escapeHtml(s.name)} 열기</a>` : '',
+    ...(s.links ?? []).map((l) => `<a class="ghost-link" href="${escapeHtml(l.url)}">${escapeHtml(l.label)} ↗</a>`),
+  ].join('');
+  return `    <dialog class="detail" id="detail-${s.id}" aria-labelledby="detail-title-${s.id}">
+      <form method="dialog" class="detail-close"><button aria-label="닫기">닫기 <kbd>Esc</kbd></button></form>
+      <div class="detail-body">
+        <p class="mono detail-kind">${TYPE_LABEL[typeOf(s)]} · ${escapeHtml(statusText(s))}</p>
+        <h2 id="detail-title-${s.id}">${escapeHtml(s.name)}</h2>
+        <p class="detail-summary">${escapeHtml(s.summary)}</p>
+        ${features}${groups}${howto}
+        ${actions ? `<div class="detail-actions">${actions}</div>` : ''}
+      </div>
+    </dialog>`;
+}
+
+function renderMarketFilters(services) {
+  const types = [...new Set(services.map(typeOf))];
+  if (types.length < 2) return '';
+  const button = (value, label, pressed) =>
+    `        <button type="button" class="filter-chip market-chip mono" data-type-filter="${value}" aria-pressed="${pressed}">${escapeHtml(label)}</button>`;
+  return [button('all', '전체', true), ...types.map((t) => button(t, TYPE_LABEL[t], false))].join('\n');
 }
 
 // 목록 끝에는 항상 "다음 실험" 자리를 둔다. 새 서비스를 추가하면 번호가 자동으로 밀린다.
@@ -159,7 +219,7 @@ function renderData(services) {
     id: s.id,
     code: code(i),
     name: s.name,
-    status: STATUS_LABEL[s.status],
+    status: statusText(s),
     url: s.status === 'building' ? null : s.url,
   }));
   return JSON.stringify(data).replace(/</g, '\\u003c');
@@ -246,6 +306,8 @@ function build() {
   const parts = {
     heroMeta: renderHeroMeta(services, sortedLog),
     services: [...services.map(renderService), renderNextSlot(services.length)].join('\n'),
+    marketFilters: renderMarketFilters(services),
+    details: services.map(renderDetail).join('\n'),
     logFilters: renderLogFilters(services, sortedLog),
     log: sortedLog.map((e) => renderLogEntry(e, nameOf[e.service])).join('\n'),
     data: renderData(services),

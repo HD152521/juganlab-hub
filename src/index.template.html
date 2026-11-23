@@ -38,7 +38,7 @@
         주간실험실
       </a>
       <nav class="nav" aria-label="주요 메뉴">
-        <a href="#experiments">서비스</a>
+        <a href="#experiments">마켓</a>
         <a href="#log">실험 일지</a>
         <a href="/log">개발기</a>
         <a href="#about">소개</a>
@@ -54,8 +54,8 @@
       <p class="hero-label mono reveal">Jugan Lab · 1인 개발 연구소</p>
       <h1 id="hero-title" class="reveal">매주 하나씩, <em>쓸모 있는 것</em>을 만듭니다.</h1>
       <p class="hero-lede reveal">
-        주간실험실은 일상과 공부에서 불편했던 것을 작은 웹 서비스로 만들어 공개하는 곳입니다.
-        만든 서비스는 각자의 주소에서 누구나 무료로 쓸 수 있고, 이 페이지에서 한눈에 모아 볼 수 있습니다.
+        주간실험실은 일상과 공부에서 불편했던 것을 웹 서비스와 크롬 확장으로 만들어 공개하는 곳입니다.
+        마켓에서 원하는 것을 고르면 어떤 기능이 있고 어떻게 쓰는지 바로 볼 수 있습니다.
       </p>
       <div class="hero-meta mono reveal">
 <!-- @heroMeta -->
@@ -65,14 +65,27 @@
 
     <section id="experiments" class="section wrap" aria-labelledby="exp-title">
       <div class="section-head">
-        <span class="mono">01 / Experiments</span>
-        <h2 id="exp-title">지금 쓸 수 있는 서비스</h2>
+        <span class="mono">01 / Marketplace</span>
+        <h2 id="exp-title">원하는 걸 골라 쓰세요</h2>
       </div>
 
-      <div class="experiments">
+      <div class="market-bar">
+        <div class="market-filters" role="group" aria-label="종류별로 보기">
+<!-- @marketFilters -->
+        </div>
+        <label class="market-search">
+          <span class="visually-hidden">서비스 검색</span>
+          <input type="search" id="market-search" placeholder="이름·태그 검색 (예: 구독)" autocomplete="off">
+        </label>
+      </div>
+      <p class="market-empty" id="market-empty" hidden>찾는 항목이 없습니다. 다른 단어로 검색해 보세요.</p>
+
+      <div class="experiments" id="market-grid">
 <!-- @services -->
       </div>
     </section>
+
+<!-- @details -->
 
 <!-- @adHub -->
 

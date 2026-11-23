@@ -134,7 +134,7 @@
   const setupLog = () => {
     const entries = [...document.querySelectorAll('#timeline .entry')];
     const more = document.getElementById('log-more');
-    const chips = [...document.querySelectorAll('.filter-chip')];
+    const chips = [...document.querySelectorAll('.log-filters .filter-chip')];
     let filter = 'all';
     let expanded = false;
 
@@ -161,6 +161,49 @@
       render();
     });
     if (more) render();
+  };
+
+  // ── 마켓: 종류 필터 + 검색 + 상세 창. 스크립트가 없으면 전부 보이고 상세는 열리지 않는다 ──
+  const setupMarket = () => {
+    const cards = [...document.querySelectorAll('#market-grid .exp[data-type]')];
+    const chips = [...document.querySelectorAll('.market-chip')];
+    const search = document.getElementById('market-search');
+    const empty = document.getElementById('market-empty');
+    let type = 'all';
+
+    const render = () => {
+      const q = (search?.value || '').trim().toLowerCase();
+      let shown = 0;
+      cards.forEach((card) => {
+        const ok = (type === 'all' || card.dataset.type === type) && (!q || card.dataset.search.includes(q));
+        card.hidden = !ok;
+        if (ok) shown += 1;
+      });
+      // "다음 실험" 자리는 검색 중에는 숨긴다
+      document.querySelectorAll('#market-grid .exp:not([data-type])').forEach((n) => (n.hidden = Boolean(q) || type !== 'all'));
+      if (empty) empty.hidden = shown !== 0;
+    };
+
+    chips.forEach((chip) =>
+      chip.addEventListener('click', () => {
+        type = chip.dataset.typeFilter;
+        chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+        render();
+      }),
+    );
+    search?.addEventListener('input', render);
+
+    document.querySelectorAll('[data-detail]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const dialog = document.getElementById(`detail-${btn.dataset.detail}`);
+        if (dialog && typeof dialog.showModal === 'function') dialog.showModal();
+      }),
+    );
+    document.querySelectorAll('dialog.detail').forEach((dialog) =>
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+      }),
+    );
   };
 
   // ── 명령 팔레트 ──
@@ -354,5 +397,6 @@
   setupCounters();
   setupPing();
   setupLog();
+  setupMarket();
   setupPalette();
 })();
