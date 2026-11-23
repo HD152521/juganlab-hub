@@ -2,10 +2,11 @@
 // 서비스나 실험 일지를 추가할 때는 data/ 의 JSON 만 고치고 `node build.mjs` 를 실행한다.
 // 화면 내용을 브라우저 스크립트가 아니라 빌드 때 HTML 로 만드는 이유: 검색 로봇과 애드센스 심사가
 // 스크립트 실행 없이도 서비스 소개와 일지를 읽을 수 있어야 한다.
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderAbout, renderLogIndex, renderPost } from './lib/pages.mjs';
+import { readDojang, renderDojangIndex, renderRef, renderUiDojang } from './lib/dojang.mjs';
 import { readPosts } from './lib/posts.mjs';
 import { checkInternalLinks, renderRobots, renderSitemap } from './lib/seo.mjs';
 
@@ -279,19 +280,31 @@ function writePosts(posts, nameOf, adHead) {
 // 날짜를 아는 페이지만 lastmod 를 단다. 모르는 날짜를 지어내지 않는다.
 const PRIVACY_EFFECTIVE = '2026-10-21'; // src/privacy.html 의 시행일
 
-function sitemapPages(sortedLog, posts) {
+function sitemapPages(sortedLog, posts, dojang) {
   const latest = (dates) => dates.filter(Boolean).sort().at(-1);
   const postDate = (p) => p.updated || p.date;
   return [
     { path: '/', lastmod: latest([...sortedLog.map((e) => e.date), ...posts.map(postDate)]) },
     { path: '/about' },
     { path: '/privacy', lastmod: PRIVACY_EFFECTIVE },
+    { path: '/dojang' },
+    { path: '/dojang/ui' },
+    ...dojang.refs.map((r) => ({ path: `/dojang/${r.slug}` })),
     { path: '/log', lastmod: latest(posts.map(postDate)) },
     ...[...posts].reverse().map((p) => ({ path: `/log/${p.slug}`, lastmod: postDate(p) })),
   ];
 }
 
 // ── 조립 ──
+
+function writeDojang(dojang, adHead) {
+  mkdirSync(join(DIST, 'dojang'), { recursive: true });
+  writeFileSync(join(DIST, 'dojang.html'), renderDojangIndex(dojang, adHead));
+  writeFileSync(join(DIST, 'dojang', 'ui.html'), renderUiDojang(dojang, adHead));
+  for (const ref of dojang.refs) writeFileSync(join(DIST, 'dojang', `${ref.slug}.html`), renderRef(ref, adHead));
+  // 데모 스크립트·스타일은 그대로 복사한다(빌드 도구 없이 순수 JS/CSS)
+  if (existsSync(join(SRC, 'dojang'))) cpSync(join(SRC, 'dojang'), join(DIST, 'dojang'), { recursive: true });
+}
 
 function build() {
   const services = readJson('services.json');
@@ -321,11 +334,13 @@ function build() {
   writeFileSync(join(DIST, 'privacy.html'), fillTemplate('privacy.html', { adHead: parts.adHead }));
   writeFileSync(join(DIST, 'about.html'), renderAbout(services, posts, parts.adHead));
   writePosts(posts, nameOf, parts.adHead);
+  const dojang = readDojang(join(ROOT, 'data', 'dojang'));
+  writeDojang(dojang, parts.adHead);
   for (const file of STATIC_FILES) cpSync(join(SRC, file), join(DIST, file));
   const adsTxt = renderAdsTxt(ads);
   if (adsTxt) writeFileSync(join(DIST, 'ads.txt'), adsTxt);
   writeFileSync(join(DIST, 'robots.txt'), renderRobots());
-  writeFileSync(join(DIST, 'sitemap.xml'), renderSitemap(sitemapPages(sortedLog, posts)));
+  writeFileSync(join(DIST, 'sitemap.xml'), renderSitemap(sitemapPages(sortedLog, posts, dojang)));
   checkInternalLinks(DIST);
 
   const adState = !ads.client ? '광고 꺼짐' : ads.slot ? '광고 스크립트+광고 칸+ads.txt' : '광고 스크립트+ads.txt(광고 칸 없음)';

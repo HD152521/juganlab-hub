@@ -206,6 +206,70 @@
     );
   };
 
+  // ── 토스트: 짧은 알림. 스크린리더에도 읽히도록 role=status ──
+  let toastEl = null;
+  let toastTimer = 0;
+  const toast = (message) => {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'hub-toast';
+      toastEl.setAttribute('role', 'status');
+      document.body.append(toastEl);
+    }
+    toastEl.textContent = message;
+    // 같은 토스트가 연달아 와도 처음부터 다시 보이도록 한 프레임 뒤에 켠다
+    toastEl.classList.remove('show');
+    requestAnimationFrame(() => toastEl.classList.add('show'));
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  };
+
+  // ── 움직임: 스크롤 등장(페이드 업 + 계단식), 첫 줄 타이핑. 스크립트가 없거나 '움직임 줄이기'면 전부 그대로 보인다 ──
+  const setupMotion = () => {
+    if (reducedMotion) return;
+
+    const label = document.querySelector('.hero-label');
+    if (label) {
+      const full = label.textContent;
+      let n = 0;
+      label.textContent = '';
+      label.classList.add('typing');
+      const step = () => {
+        n += 1;
+        label.textContent = full.slice(0, n);
+        if (n < full.length) setTimeout(step, 38);
+        else setTimeout(() => label.classList.remove('typing'), 1200);
+      };
+      setTimeout(step, 250);
+      label.setAttribute('aria-label', full);
+    }
+
+    if (!('IntersectionObserver' in window)) return;
+    const targets = document.querySelectorAll('.section-head, #market-grid .exp, .principle, .contact');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          observer.unobserve(entry.target);
+          entry.target.classList.add('in');
+          // 등장이 끝나면 클래스를 떼서 카드의 hover 효과와 충돌하지 않게 한다
+          setTimeout(() => entry.target.classList.remove('rv', 'in'), 1100);
+        }
+      },
+      { threshold: 0.12 },
+    );
+    const rowOf = new Map();
+    targets.forEach((el, i) => {
+      // 같은 줄에 한꺼번에 들어오는 카드는 왼쪽부터 차례로
+      const top = Math.round(el.getBoundingClientRect().top / 40);
+      const order = rowOf.get(top) ?? 0;
+      rowOf.set(top, order + 1);
+      el.style.setProperty('--i', String(Math.min(order, 4)));
+      el.classList.add('rv');
+      observer.observe(el);
+    });
+  };
+
   // ── 명령 팔레트 ──
   const readServices = () => {
     try {
@@ -275,12 +339,17 @@
           .filter((s) => s.url)
           .map((s) => [`open ${s.id}`, { desc: `${s.name} 로 이동`, run: () => go(s.url) }]),
       ),
+      dojang: { desc: '도감(UI·개발 참고)으로 이동', run: () => go('/dojang') },
       log: { desc: '실험 일지로 이동', run: () => go('#log') },
       about: { desc: '소개로 이동', run: () => go('#about') },
       contact: { desc: '메일 보내기', run: () => go('mailto:wkdrndydtlr@gmail.com') },
       theme: {
         desc: '밝은/어두운 화면 바꾸기',
-        run: () => print(`  테마를 ${toggleTheme() === 'dark' ? '어둡게' : '밝게'} 바꿨습니다.`),
+        run: () => {
+          const next = toggleTheme() === 'dark' ? '어둡게' : '밝게';
+          print(`  테마를 ${next} 바꿨습니다.`);
+          toast(`${next} 화면으로 바꿨습니다`);
+        },
       },
       clear: { desc: '화면 지우기', run: () => out.replaceChildren() },
       whoami: {

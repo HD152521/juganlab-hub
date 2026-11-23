@@ -1,0 +1,47 @@
+{
+  "slug": "git",
+  "title": "Git 상황별 명령 도감",
+  "description": "'이럴 땐 어떻게 하지?' 상황별로 찾는 Git 명령 모음. 명령과 함께 주의할 점을 적었습니다.",
+  "intro": "명령 이름이 아니라 겪는 상황으로 찾도록 정리했습니다. 되돌리기 계열은 기록을 지울 수 있으니 '주의'를 꼭 읽으세요.",
+  "sections": [
+    { "name": "확인하기", "items": [
+      { "term": "지금 뭐가 바뀌었는지 보고 싶어요", "short": "작업 중인 변경과 스테이징 상태를 봅니다.", "example": "git status\ngit diff\ngit diff --staged", "detail": "git diff 는 아직 add 하지 않은 변경, --staged 는 커밋 직전 변경입니다." },
+      { "term": "커밋 기록을 한 줄씩 보고 싶어요", "short": "짧은 로그와 브랜치 그래프를 봅니다.", "example": "git log --oneline --graph --decorate -20" },
+      { "term": "이 줄을 누가 언제 바꿨는지 알고 싶어요", "short": "파일의 줄마다 마지막 수정 커밋을 봅니다.", "example": "git blame 파일경로" }
+    ]},
+    { "name": "저장하기", "items": [
+      { "term": "변경을 커밋하고 싶어요", "short": "고른 파일만 스테이징해서 커밋합니다.", "example": "git add 파일경로\ngit commit -m \"feat: 설명\"", "detail": "git add . 은 의도치 않은 파일(.env 등)까지 담을 수 있으니 status 로 확인한 뒤 씁니다." },
+      { "term": "방금 커밋 메시지를 고치고 싶어요", "short": "마지막 커밋을 덮어씁니다.", "example": "git commit --amend -m \"새 메시지\"", "detail": "주의: 이미 push 한 커밋이면 기록이 달라져 강제 푸시가 필요합니다. 혼자 쓰는 브랜치에서만 하세요." },
+      { "term": "파일 하나를 빠뜨려서 방금 커밋에 넣고 싶어요", "short": "빠뜨린 파일을 담아 마지막 커밋에 합칩니다.", "example": "git add 빠뜨린파일\ngit commit --amend -C HEAD", "detail": "주의: push 전 커밋에만 쓰세요. -C HEAD 는 메시지를 그대로 재사용합니다." },
+      { "term": "하던 작업을 잠깐 치워 두고 싶어요", "short": "변경을 임시 보관함에 넣었다가 꺼냅니다.", "example": "git stash push -m \"작업 이름\"\ngit stash list\ngit stash pop" }
+    ]},
+    { "name": "되돌리기", "items": [
+      { "term": "add 한 파일을 스테이징에서 빼고 싶어요", "short": "변경 내용은 두고 스테이징만 취소합니다.", "example": "git restore --staged 파일경로" },
+      { "term": "수정한 파일을 마지막 커밋 상태로 되돌리고 싶어요", "short": "작업 중인 변경을 버립니다.", "example": "git restore 파일경로", "detail": "주의: 커밋하지 않은 변경은 복구할 수 없습니다." },
+      { "term": "이미 push 한 커밋을 취소하고 싶어요", "short": "취소하는 새 커밋을 만듭니다. 기록은 남습니다.", "example": "git revert 커밋해시", "detail": "공유 브랜치에서는 기록을 지우는 reset 대신 revert 가 안전합니다." },
+      { "term": "마지막 커밋을 없던 일로 하고 싶어요(push 전)", "short": "커밋만 취소하고 변경은 남깁니다.", "example": "git reset --soft HEAD~1", "detail": "--soft 는 변경을 스테이징에 남기고, --mixed(기본)는 작업 폴더에만 남깁니다. --hard 는 변경까지 버리므로 주의하세요." },
+      { "term": "실수로 reset --hard 를 했어요", "short": "HEAD 이동 기록(reflog)에서 이전 커밋을 찾아 복구합니다.", "example": "git reflog\ngit reset --hard HEAD@{1}", "detail": "커밋된 적 있는 내용만 되살릴 수 있습니다. 한동안 지난 뒤에는 정리될 수 있습니다." }
+    ]},
+    { "name": "브랜치", "items": [
+      { "term": "새 브랜치를 만들어 옮겨 가고 싶어요", "short": "만들면서 바로 전환합니다.", "example": "git switch -c feat/이름" },
+      { "term": "브랜치 사이를 오가고 싶어요", "short": "이미 있는 브랜치로 전환합니다.", "example": "git switch main" },
+      { "term": "다 쓴 브랜치를 지우고 싶어요", "short": "머지된 브랜치를 로컬에서 지웁니다.", "example": "git branch -d feat/이름", "detail": "머지되지 않은 브랜치는 -d 가 거절합니다. 정말 버릴 때만 -D 를 씁니다." },
+      { "term": "엉뚱한 브랜치(main)에서 작업해 버렸어요", "short": "커밋 전이라면 변경을 들고 새 브랜치로 옮깁니다.", "example": "git switch -c feat/이름", "detail": "변경이 아직 커밋 전이면 새 브랜치를 만들 때 변경이 그대로 따라옵니다." }
+    ]},
+    { "name": "합치기", "items": [
+      { "term": "다른 브랜치 내용을 합치고 싶어요", "short": "현재 브랜치에 대상 브랜치를 병합합니다.", "example": "git switch main\ngit merge feat/이름" },
+      { "term": "충돌이 났어요", "short": "표시된 부분(<<<<<<<)을 직접 고친 뒤 마무리합니다.", "example": "git status\n# 충돌 파일을 열어 고침\ngit add 파일경로\ngit commit", "detail": "도중에 포기하려면 git merge --abort 로 병합 전 상태로 돌아갑니다." },
+      { "term": "커밋 하나만 가져오고 싶어요", "short": "다른 브랜치의 특정 커밋을 현재 브랜치에 복사합니다.", "example": "git cherry-pick 커밋해시" }
+    ]},
+    { "name": "원격 저장소", "items": [
+      { "term": "원격의 최신 내용을 받고 싶어요", "short": "받아서 내 브랜치에 합칩니다.", "example": "git pull --rebase", "detail": "fetch 는 받기만 하고, pull 은 받아서 합치기까지 합니다. 기록을 한 줄로 유지하려면 --rebase 를 씁니다." },
+      { "term": "내 브랜치를 처음 올리고 싶어요", "short": "원격 브랜치를 만들고 추적을 연결합니다.", "example": "git push -u origin 브랜치이름" },
+      { "term": "push 가 거절됐어요(non-fast-forward)", "short": "원격에 내가 모르는 커밋이 있다는 뜻입니다.", "example": "git pull --rebase\ngit push", "detail": "주의: 강제 푸시(--force)로 덮어쓰면 남의 커밋을 지울 수 있습니다. 꼭 필요하면 --force-with-lease 가 더 안전합니다." },
+      { "term": "원격 주소를 확인·바꾸고 싶어요", "short": "등록된 원격과 주소를 봅니다.", "example": "git remote -v\ngit remote set-url origin 새주소" }
+    ]},
+    { "name": "정리하기", "items": [
+      { "term": "커밋 안 할 파일을 무시하고 싶어요", "short": ".gitignore 에 적습니다.", "example": "echo \".env\" >> .gitignore", "detail": "이미 커밋된 파일은 무시되지 않습니다. git rm --cached 파일 로 추적만 끊어야 합니다. 비밀 값이 올라갔다면 키를 폐기·교체하세요." },
+      { "term": "태그로 배포 지점을 표시하고 싶어요", "short": "커밋에 이름표를 붙이고 올립니다.", "example": "git tag v1.0.0\ngit push origin v1.0.0" }
+    ]}
+  ]
+}

@@ -1,0 +1,370 @@
+/* 도감 페이지 공통 스타일. 데모 각각의 스타일은 ui-<묶음>.css 에 있다. */
+
+.dm-page .doc-lede {
+  max-width: 62ch;
+}
+
+.dojang-grid {
+  margin-top: 36px;
+}
+
+.dojang-card h3 {
+  margin-top: 36px;
+}
+
+.dojang-card .exp-cta {
+  margin-top: auto;
+}
+
+.dm-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 32px 0 24px;
+}
+
+.dm-chips,
+.rf-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dm-section[hidden],
+.rf-section[hidden],
+.dm-item[hidden],
+.rf-item[hidden] {
+  display: none;
+}
+
+.dm-section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 56px 0 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--ink);
+  font-size: clamp(1.4rem, 1.1rem + 1.2vw, 2rem);
+  letter-spacing: -0.02em;
+}
+
+.dm-section-title .mono {
+  color: var(--signal);
+}
+
+/* 항목 카드 */
+
+.dm-item {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 28px;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  scroll-margin-top: 84px;
+}
+
+.dm-item header p {
+  margin: 8px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+}
+
+.dm-item h3 {
+  margin: 4px 0 0;
+  font-size: clamp(1.3rem, 1.1rem + 0.8vw, 1.7rem);
+  letter-spacing: -0.02em;
+}
+
+.dm-item h3 a {
+  text-decoration: none;
+}
+
+.dm-item h3 a:hover,
+.dm-item h3 a:focus-visible {
+  color: var(--signal);
+  outline: none;
+}
+
+.dm-group {
+  color: var(--ink-faint);
+}
+
+/* 데모 무대: 데모는 이 안에서만 움직인다 */
+
+.dm-stage-wrap {
+  display: grid;
+  gap: 10px;
+}
+
+.dm-stage {
+  position: relative;
+  min-height: 260px;
+  padding: 20px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--paper-deep);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+  color: var(--ink);
+}
+
+.dm-noscript {
+  margin: 0;
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+}
+
+.dm-tools {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dm-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s var(--ease), background-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.15s var(--ease);
+}
+
+.dm-btn:hover,
+.dm-btn:focus-visible {
+  border-color: var(--signal);
+  outline: none;
+}
+
+.dm-btn:active {
+  transform: scale(0.97);
+}
+
+.dm-btn.primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.dm-btn.primary:hover,
+.dm-btn.primary:focus-visible {
+  background: var(--signal);
+  border-color: var(--signal);
+}
+
+/* 언제 쓰나 / 피하나 */
+
+.dm-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.dm-cols h4 {
+  margin: 0 0 8px;
+  color: var(--ink-faint);
+}
+
+.dm-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+
+.dm-list li {
+  position: relative;
+  padding-left: 22px;
+}
+
+.dm-list li::before {
+  position: absolute;
+  left: 0;
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.dm-list.good li::before {
+  content: '✓';
+  color: var(--live);
+}
+
+.dm-list.bad li::before {
+  content: '✕';
+  color: var(--signal);
+}
+
+.dm-tip {
+  margin: 0;
+  padding: 12px 16px;
+  border-left: 3px solid var(--signal);
+  background: var(--signal-soft);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.95rem;
+}
+
+/* 코드 */
+
+.dm-code summary {
+  display: inline-block;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.dm-code summary:hover,
+.dm-code summary:focus-visible {
+  border-color: var(--signal);
+  outline: none;
+}
+
+.dm-code[open] summary {
+  margin-bottom: 12px;
+}
+
+.dm-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.dm-tabs button[role='tab'] {
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.dm-tabs button[aria-selected='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.dm-copy {
+  margin-left: auto;
+  padding: 4px 14px;
+  font-size: 0.82rem;
+}
+
+.dm-code pre,
+.rf-code pre {
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  border-radius: 10px;
+  background: #151a24;
+  color: #e6ebf3;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  tab-size: 2;
+}
+
+/* 알림 토스트(복사 안내) */
+
+.dm-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 30;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.9rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+  transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+}
+
+.dm-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* 개발 참고 도감 */
+
+.rf-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rf-item {
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.rf-item h3 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  word-break: break-word;
+}
+
+.rf-short {
+  margin: 6px 0 0;
+  font-weight: 600;
+}
+
+.rf-detail {
+  margin: 12px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.93rem;
+}
+
+.rf-code {
+  position: relative;
+  margin-top: 12px;
+}
+
+.rf-code .dm-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 12px;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 720px) {
+  .dm-cols {
+    grid-template-columns: 1fr;
+  }
+  .dm-stage {
+    padding: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dm-toast {
+    transition: none;
+  }
+}

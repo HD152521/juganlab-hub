@@ -106,3 +106,9 @@ related: 보여 줄 이름 | https://cert.juganlab.com/lab
 - `related` 는 한 줄 이상, 글 끝 "직접 써 보기" 칸에 나옵니다.
 - 홈 실험 일지에서 연결하려면 `data/log.json` 항목에 `"post": "슬러그"` 를 넣습니다.
 - 사실은 저장소 기록(커밋·문서)에서 확인한 것만 씁니다.
+
+## 도감 (/dojang)
+
+- `/dojang` 목차, `/dojang/ui` UI 도감(실제 동작 데모), `/dojang/http|git|regex` 개발 참고 도감.
+- 데이터는 `data/dojang/`: `ui-<묶음>.json`(제목·쓸 때/피할 때), `ref-<이름>.json`(참고 도감). 새 참고 도감은 `ref-*.json` 을 추가하면 자동으로 페이지가 생깁니다.
+- UI 데모 코드는 `src/dojang/ui-<묶음>.js|css`. `window.JL_DEMOS[id] = { mount(stage), code }` 형태이며 규칙은 `data/dojang/CONTRACT.md` 에 있습니다.
