@@ -1,19 +1,27 @@
 # 주간실험실 허브 (juganlab.com)
 
-운영 중인 서비스와 개발 기록(실험 일지)을 모아 보여 주는 정적 랜딩 페이지입니다.
-화면 내용은 `data/` 의 JSON 에서 빌드 때 HTML 로 만들어집니다.
+처음 만든 웹·앱·확장 프로그램을 개발일지와 함께 올려 알리는 메이커 마켓이자, 만드는 사람을 위한 도구함입니다.
+정적 사이트이며 화면 내용은 `data/` 의 JSON 에서 빌드 때 HTML 로 만들어집니다.
+
+**방향성과 결정 기록은 [docs/DIRECTION.md](docs/DIRECTION.md) 를 먼저 읽으세요.**
 
 ## 구조
 
 ```
-data/services.json      서비스 목록 (카드, 콘솔 ls/open 명령)
-data/log.json           실험 일지 (타임라인). post 를 넣으면 개발기 글로 연결
-data/posts/*.md         개발기 글 → /log/<파일이름>, 목록은 /log
-src/index.template.html 본문 틀. <!-- @이름 --> 자리를 빌드가 채운다
-src/styles.css, app.js, privacy.html
+data/services.json      작품 목록 (type·category·영어 소개 포함, 카드·작품 페이지·콘솔 명령)
+data/log.json           개발일지. service 가 작품 id 와 같으면 그 작품 페이지에 붙고, post 를 넣으면 개발기 글로 연결
+data/checks.json        작품 자동 검사 결과 (CI 가 기록, 손으로 고치지 않음)
+data/posts/*.md         개발기 글 → /log/<파일이름>
+data/dojang, data/ai    UI·개발 참고 도감, AI 활용 가이드
+data/trending*.json     AI 스킬 어워즈 (매일 Actions 가 갱신)
+src/index.template.html 홈 틀. <!-- @이름 --> 자리를 빌드가 채운다
+src/styles.css, app.js, privacy.html, dojang/
 build.mjs               data + src → dist/ (robots.txt·sitemap.xml 포함, 깨진 내부 링크가 있으면 실패)
-lib/                    글 변환(markdown.mjs)·글 검증(posts.mjs)·글/목록/소개 페이지(pages.mjs)·robots·사이트맵·링크 검사(seo.mjs)
-scripts/preview.mjs     dist 를 cleanUrls 규칙으로 띄우는 미리보기 서버
+lib/                    페이지별 렌더링 (projects 작품, en 영어, home, learn, ai, trending, dojang, pages 공통) · checks 검사 판정 · seo · markdown · posts
+scripts/                preview.mjs 미리보기, fetch-trending.mjs 트렌딩 수집, check-submission.mjs 작품 검사
+test/                   node --test test/checks.test.mjs
+.github/workflows/      trending(매일), check-pr(PR 검사), check-main(병합 뒤 전체 검사)
+docs/DIRECTION.md       방향성·결정 기록·다음 순서
 ```
 
 ## 빌드·미리보기
@@ -107,8 +115,29 @@ related: 보여 줄 이름 | https://cert.juganlab.com/lab
 - 홈 실험 일지에서 연결하려면 `data/log.json` 항목에 `"post": "슬러그"` 를 넣습니다.
 - 사실은 저장소 기록(커밋·문서)에서 확인한 것만 씁니다.
 
-## 도감 (/dojang)
+## 배우기 (/learn)·도감 (/dojang)
+
+- 홈(/)은 내가 만든 서비스 전시(마켓), 배우기(/learn)는 초보 개발자용 입구, 올리기(/submit)는 다른 사람이 프로젝트를 올리는 방법입니다. 도감은 서비스가 아니라 배우기 쪽 콘텐츠라 services.json 에 넣지 않습니다.
 
 - `/dojang` 목차, `/dojang/ui` UI 도감(실제 동작 데모), `/dojang/http|git|regex` 개발 참고 도감.
 - 데이터는 `data/dojang/`: `ui-<묶음>.json`(제목·쓸 때/피할 때), `ref-<이름>.json`(참고 도감). 새 참고 도감은 `ref-*.json` 을 추가하면 자동으로 페이지가 생깁니다.
 - UI 데모 코드는 `src/dojang/ui-<묶음>.js|css`. `window.JL_DEMOS[id] = { mount(stage), code }` 형태이며 규칙은 `data/dojang/CONTRACT.md` 에 있습니다.
+
+## AI 활용 (/ai)
+
+- 데이터는 `data/ai/guide-<이름>.json`. 참고 도감(`data/dojang/ref-*.json`)과 같은 스키마(`slug`, `title`, `description`, `intro`, `sections[].items[]{term, short, detail?, example?}`)이고, 파일을 추가하면 `/ai/<slug>` 페이지가 자동으로 생깁니다.
+
+## AI 스킬 트렌딩 (/trending)
+
+- `data/trending.json` 을 `scripts/fetch-trending.mjs` 가 갱신합니다(GitHub 검색 API, 토픽: agent-skills·claude-skills·claude-code·mcp-server·ai-agents·prompt-engineering, 기간 내 새로 생성된 저장소를 별 많은 순). 오늘의 목록은 매일, 주간 목록은 일요일(한국 시간)에 새로 만듭니다.
+- `.github/workflows/trending.yml` 이 매일 한국 시간 00:10 에 실행해 변경이 있으면 커밋합니다. 로컬 실행: `GITHUB_TOKEN=$(gh auth token) node scripts/fetch-trending.mjs --force`
+- 별 수만으로 고른 목록이라 안전성을 보증하지 않습니다(페이지에 안내 문구가 있습니다). 설명이 없거나 수상한 단어가 든 저장소는 걸러냅니다.
+
+## 작품 올리기와 자동 검사 (/submit, /p/<id>, /en)
+
+- `data/services.json` 항목 하나가 작품 하나입니다. `type` 은 `web` / `app` / `extension`, 영어 소개는 `name_en`·`summary_en`(둘이 함께 있어야 `/en` 에 나옵니다).
+- 작품마다 `/p/<id>` 페이지가 만들어지고, `data/log.json` 에서 `service` 가 같은 일지가 그 페이지에 붙습니다.
+- `lib/checks.mjs` 가 순수 판정(주소 형식·응답·manifest 권한·소스 패턴), `scripts/check-submission.mjs` 가 네트워크 검사를 맡습니다. 시험은 `node --test test/checks.test.mjs`.
+- PR: `.github/workflows/check-pr.yml` 이 빌드·시험·검사를 돌립니다(포크 PR 에는 비밀값이 없어 Safe Browsing·VirusTotal 은 건너뜀).
+- 병합 후: `.github/workflows/check-main.yml` 이 전체 검사를 하고 `data/checks.json` 에 기록합니다(주소가 바뀌었거나 7일 지난 작품만). 저장소 secret `GSB_API_KEY`(Google Safe Browsing), `VT_API_KEY`(VirusTotal)가 없으면 그 검사는 "건너뜀"으로 기록됩니다.
+- 화면에는 "안전함"이 아니라 "자동 검사 통과 날짜"와 검사 항목만 적습니다. 검사는 위험 신호를 거를 뿐 안전을 보장하지 않습니다.
