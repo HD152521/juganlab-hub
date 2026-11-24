@@ -1,0 +1,47 @@
+name: check-main
+
+# 병합된 작품을 전체 검사(Safe Browsing·VirusTotal 포함)하고 결과를 data/checks.json 에 기록한다.
+# 주소가 바뀌었거나 7일이 지난 작품만 다시 검사한다. 저장소 secret: GSB_API_KEY, VT_API_KEY (없으면 해당 검사는 건너뜀으로 기록)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/services.json'
+  schedule:
+    - cron: '30 15 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: check-main
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 작품 전체 검사
+        run: node scripts/check-submission.mjs --write
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GSB_API_KEY: ${{ secrets.GSB_API_KEY }}
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+        continue-on-error: true
+      - name: 변경이 있으면 커밋
+        run: |
+          if git diff --quiet -- data/checks.json; then
+            echo "변경 없음"
+          else
+            git config user.name "juganlab-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add data/checks.json
+            git commit -m "chore: 작품 자동 검사 결과 갱신"
+            git pull --rebase
+            git push
+          fi

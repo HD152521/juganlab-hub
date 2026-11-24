@@ -1,5 +1,5 @@
 // 허브 페이지 빌드: data/*.json 을 읽어 src/index.template.html 의 자리표시자를 채우고 dist/ 에 쓴다.
-// 서비스나 실험 일지를 추가할 때는 data/ 의 JSON 만 고치고 `node build.mjs` 를 실행한다.
+// 작품이나 일지를 추가할 때는 data/ 의 JSON 만 고치고 `node build.mjs` 를 실행한다.
 // 화면 내용을 브라우저 스크립트가 아니라 빌드 때 HTML 로 만드는 이유: 검색 로봇과 애드센스 심사가
 // 스크립트 실행 없이도 서비스 소개와 일지를 읽을 수 있어야 한다.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -7,6 +7,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderAbout, renderLogIndex, renderPost } from './lib/pages.mjs';
 import { readDojang, renderDojangIndex, renderRef, renderUiDojang } from './lib/dojang.mjs';
+import { renderLearn, renderSubmit } from './lib/learn.mjs';
+import { readAiGuides, renderAiIndex } from './lib/ai.mjs';
+import { readTrending, renderTrending } from './lib/trending.mjs';
+import { buildSearchIndex, renderHeroMeta as renderHomeMeta, renderToolbox } from './lib/home.mjs';
+import { hasEnglish, renderEnHome, renderEnProject, renderEnSubmit } from './lib/en.mjs';
+import { CATEGORIES, categoryOf, renderCheck, renderProject, statusText, TYPE_LABEL, typeOf } from './lib/projects.mjs';
 import { readPosts } from './lib/posts.mjs';
 import { checkInternalLinks, renderRobots, renderSitemap } from './lib/seo.mjs';
 
@@ -24,8 +30,6 @@ const ADSENSE_SLOT_RE = /^\d{6,20}$/;
 const GOOGLE_CERT_AUTHORITY_ID = 'f08c47fec0942fa0';
 
 const STATUS_LABEL = { live: '운영 중', beta: '베타', building: '준비 중' };
-const TYPE_LABEL = { web: '웹 서비스', extension: '크롬 확장', guide: '도감' };
-const statusText = (s) => s.statusLabel || STATUS_LABEL[s.status];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ID_RE = /^[a-z0-9-]+$/;
 
@@ -52,8 +56,14 @@ function validate(services, log, posts) {
     if (!STATUS_LABEL[s.status]) errors.push(`${at}: status 는 ${Object.keys(STATUS_LABEL).join(' / ')} 중 하나여야 합니다`);
     if (s.status !== 'building' && !/^https:\/\//.test(s.url ?? '')) errors.push(`${at}: url 은 https:// 로 시작해야 합니다`);
     if (!s.summary) errors.push(`${at}: summary 가 비어 있습니다`);
+    if (s.author !== undefined && (typeof s.author !== 'string' || !s.author.trim())) errors.push(`${at}: author 는 비어 있지 않은 문자열이어야 합니다`);
+    for (const key of ['name_en', 'summary_en']) {
+      if (s[key] !== undefined && (typeof s[key] !== 'string' || !s[key].trim())) errors.push(`${at}: ${key} 는 비어 있지 않은 문자열이어야 합니다`);
+    }
+    if (Boolean(s.name_en) !== Boolean(s.summary_en)) errors.push(`${at}: name_en 과 summary_en 은 함께 적어야 합니다`);
     if (s.since && !DATE_RE.test(s.since)) errors.push(`${at}: since 는 YYYY-MM-DD 형식이어야 합니다`);
     if (s.ping && !/^https:\/\//.test(s.ping)) errors.push(`${at}: ping 은 https:// 주소여야 합니다`);
+    if (s.category && !CATEGORIES.some((c) => c.id === s.category)) errors.push(`${at}: category 는 ${CATEGORIES.map((c) => c.id).join(' / ')} 중 하나여야 합니다`);
     if (s.type && !TYPE_LABEL[s.type]) errors.push(`${at}: type 은 ${Object.keys(TYPE_LABEL).join(' / ')} 중 하나여야 합니다`);
     for (const f of s.features ?? []) {
       if (!f.title) errors.push(`${at}: features 항목에는 title 이 필요합니다`);
@@ -94,124 +104,54 @@ function renderStats(stats = []) {
   return `\n          <dl class="stats">${cells}</dl>`;
 }
 
-const typeOf = (s) => s.type || 'web';
-
 function renderTags(tags = []) {
   if (!tags.length) return '';
   return `
           <ul class="tags">${tags.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`;
 }
 
-function renderService(s, index) {
-  const domain = s.url ? new URL(s.url).host : '';
+// 한눈에 많이 보이도록 카드를 작게 만든다. 카드 전체가 작품 페이지로 가는 링크다.
+function renderService(s, index, entryCount, check) {
   const ping = s.ping && s.status !== 'building' ? ` data-ping="${escapeHtml(s.ping)}"` : '';
   const statusClass = s.status === 'building' ? 'status' : `status ${s.status}`;
-  const classes = ['exp', s.featured && 'featured', s.status === 'building' && 'pending'].filter(Boolean).join(' ');
-  const search = [s.name, s.summary, ...(s.tags ?? [])].join(' ').toLowerCase();
-  const open = s.url && s.status !== 'building'
-    ? `<a class="exp-link" href="${escapeHtml(s.url)}">열기 <span aria-hidden="true">↗</span></a>`
-    : '';
-  return `        <article class="${classes}" id="svc-${s.id}" data-type="${typeOf(s)}" data-search="${escapeHtml(search)}">
+  const cat = categoryOf(s);
+  const search = [s.name, s.summary, s.author, cat.label, ...(s.tags ?? [])].filter(Boolean).join(' ').toLowerCase();
+  const foot = [s.author ? `by ${escapeHtml(s.author)}` : '', entryCount ? `일지 ${entryCount}` : '', renderCheck(check)].filter(Boolean).join(' ');
+  return `        <article class="exp exp-c" id="svc-${s.id}" data-type="${typeOf(s)}" data-cat="${cat.id}" data-search="${escapeHtml(search)}">
           <div class="exp-top mono">
-            <span>${code(index)} · ${TYPE_LABEL[typeOf(s)]}</span>
+            <span>${TYPE_LABEL[typeOf(s)]} · ${cat.label}</span>
             <span class="${statusClass}"${ping}>${escapeHtml(statusText(s))}</span>
           </div>
-          <h3>${escapeHtml(s.name)}</h3>
-          ${domain ? `<span class="domain">${escapeHtml(domain)}</span>` : ''}
-          <p>${escapeHtml(s.summary)}</p>${renderTags(s.tags)}${renderStats(s.stats)}
-          <div class="exp-actions">
-            <button type="button" class="exp-detail" data-detail="${s.id}" aria-haspopup="dialog">기능·사용법 보기 <span aria-hidden="true">→</span></button>
-            ${open}
-          </div>
+          <h3><a class="exp-title" href="/p/${s.id}">${escapeHtml(s.name)}</a></h3>
+          <p>${escapeHtml(s.summary)}</p>
+          ${(s.tags ?? []).length ? `<ul class="tags">${s.tags.slice(0, 3).map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
+          ${foot ? `<p class="exp-meta mono">${foot}</p>` : ''}
         </article>`;
 }
 
-// 카드마다 기능·사용법 상세 창을 만든다. 스크립트 없이도 검색 로봇이 읽을 수 있게 빌드 때 HTML 로 둔다.
-function renderDetail(s) {
-  const features = (s.features ?? []).length
-    ? `<h3>주요 기능</h3>
-        <ul class="feature-list">${s.features.map((f) => `<li><strong>${escapeHtml(f.title)}</strong>${f.desc ? `<span>${escapeHtml(f.desc)}</span>` : ''}</li>`).join('')}</ul>`
-    : '';
-  const groups = (s.groups ?? []).length
-    ? `<h3>다루는 내용 <span class="count mono">${s.groups.reduce((n, g) => n + g.items.length, 0)}개</span></h3>
-        ${s.groups.map((g) => `<div class="group"><h4 class="mono">${escapeHtml(g.name)}</h4><ul class="chips">${g.items.map((i) => `<li>${escapeHtml(i)}</li>`).join('')}</ul></div>`).join('')}`
-    : '';
-  const howtoTitle = s.status === 'building' ? '이렇게 쓰게 됩니다' : '사용 방법';
-  const howto = (s.howto ?? []).length
-    ? `<h3>${howtoTitle}</h3>
-        <ol class="steps">${s.howto.map((h) => `<li>${escapeHtml(h)}</li>`).join('')}</ol>`
-    : '';
-  const actions = [
-    s.url && s.status !== 'building' ? `<a class="mail" href="${escapeHtml(s.url)}">${escapeHtml(s.name)} 열기</a>` : '',
-    ...(s.links ?? []).map((l) => `<a class="ghost-link" href="${escapeHtml(l.url)}">${escapeHtml(l.label)} ↗</a>`),
-  ].join('');
-  return `    <dialog class="detail" id="detail-${s.id}" aria-labelledby="detail-title-${s.id}">
-      <form method="dialog" class="detail-close"><button aria-label="닫기">닫기 <kbd>Esc</kbd></button></form>
-      <div class="detail-body">
-        <p class="mono detail-kind">${TYPE_LABEL[typeOf(s)]} · ${escapeHtml(statusText(s))}</p>
-        <h2 id="detail-title-${s.id}">${escapeHtml(s.name)}</h2>
-        <p class="detail-summary">${escapeHtml(s.summary)}</p>
-        ${features}${groups}${howto}
-        ${actions ? `<div class="detail-actions">${actions}</div>` : ''}
-      </div>
-    </dialog>`;
-}
-
+// 종류 줄과 카테고리 줄. 카테고리는 비어 있어도 보여 줘서 어떤 분류가 있는지 알 수 있게 한다.
 function renderMarketFilters(services) {
-  const types = [...new Set(services.map(typeOf))];
-  if (types.length < 2) return '';
-  const button = (value, label, pressed) =>
-    `        <button type="button" class="filter-chip market-chip mono" data-type-filter="${value}" aria-pressed="${pressed}">${escapeHtml(label)}</button>`;
-  return [button('all', '전체', true), ...types.map((t) => button(t, TYPE_LABEL[t], false))].join('\n');
-}
-
-// 목록 끝에는 항상 "다음 실험" 자리를 둔다. 새 서비스를 추가하면 번호가 자동으로 밀린다.
-function renderNextSlot(index) {
-  return `        <div class="exp pending">
-          <div class="exp-top mono">
-            <span>${code(index)}</span>
-            <span class="status">준비 중</span>
-          </div>
-          <h3>다음 실험</h3>
-          <span class="domain">*.juganlab.com</span>
-          <p>다음 서비스를 만들고 있습니다. 공개되면 이 자리에 소개와 주소를 올립니다.</p>
+  const chip = (attr, value, label, pressed, count) =>
+    `          <button type="button" class="filter-chip market-chip mono" data-${attr}="${value}" aria-pressed="${pressed}"${count === 0 ? ' data-empty' : ''}>${escapeHtml(label)} <span class="chip-n">${count}</span></button>`;
+  const types = Object.keys(TYPE_LABEL);
+  const typeRow = [chip('type-filter', 'all', '전체', true, services.length), ...types.map((t) => chip('type-filter', t, TYPE_LABEL[t], false, services.filter((s) => typeOf(s) === t).length))].join('\n');
+  const catRow = [chip('cat-filter', 'all', '모든 분류', true, services.length), ...CATEGORIES.map((c) => chip('cat-filter', c.id, c.label, false, services.filter((s) => categoryOf(s).id === c.id).length))].join('\n');
+  return `        <div class="market-row" role="group" aria-label="종류별로 보기">
+${typeRow}
+        </div>
+        <div class="market-row" role="group" aria-label="분류별로 보기">
+${catRow}
         </div>`;
 }
 
-function renderLogEntry(entry, serviceName) {
-  const tag = [serviceName, entry.kind].filter(Boolean).map(escapeHtml).join(' · ');
-  return `        <li class="entry${entry.highlight ? ' highlight' : ''}" data-service="${entry.service}">
-          <time class="mono" datetime="${entry.date}">${dotted(entry.date)}</time>
-          <div>
-            <span class="entry-tag mono">${tag}</span>
-            <h3>${entry.post ? `<a href="/log/${entry.post}">${escapeHtml(entry.title)}</a>` : escapeHtml(entry.title)}</h3>
-            <p>${escapeHtml(entry.body)}</p>${
-              entry.post
-                ? `\n            <a class="entry-more mono" href="/log/${entry.post}">개발기 읽기 <span aria-hidden="true">→</span></a>`
-                : ''
-            }
-          </div>
-        </li>`;
-}
-
-// 서비스가 하나뿐이면 걸러 볼 이유가 없으므로 필터 버튼을 만들지 않는다.
-function renderLogFilters(services, log) {
-  const withEntries = services.filter((s) => log.some((e) => e.service === s.id));
-  if (withEntries.length < 2) return '';
-  const button = (value, label, pressed) =>
-    `        <button type="button" class="filter-chip mono" data-filter="${value}" aria-pressed="${pressed}">${escapeHtml(label)}</button>`;
-  return [button('all', '전체', true), ...withEntries.map((s) => button(s.id, s.name, false))].join('\n');
-}
-
-function renderHeroMeta(services, log) {
-  const running = services.filter((s) => s.status !== 'building').length;
-  const firstDate = [...services.map((s) => s.since), ...log.map((e) => e.date)].filter(Boolean).sort()[0];
-  const since = firstDate ? dotted(firstDate).slice(0, 7) : String(new Date().getFullYear());
-  return [
-    `        <span>운영 중 <strong>${running}</strong></span>`,
-    `        <span>실험 일지 <strong>${log.length}</strong></span>`,
-    `        <span>Since <strong>${since}</strong></span>`,
-  ].join('\n');
+// 목록 끝에는 항상 "내 작품" 자리를 둔다.
+function renderNextSlot() {
+  return `        <a class="exp exp-c exp-slot" href="/submit" data-slot>
+          <div class="exp-top mono"><span>웹 · 앱 · 확장 프로그램</span></div>
+          <h3>여기에 내 작품 올리기</h3>
+          <p>처음 만든 것도 괜찮습니다. 올리면 이 자리에 카드가 생깁니다.</p>
+          <p class="exp-meta mono">올리는 방법 →</p>
+        </a>`;
 }
 
 // 콘솔이 쓰는 최소 정보만 넘긴다. </script> 가 끼지 않도록 < 를 이스케이프한다.
@@ -280,13 +220,21 @@ function writePosts(posts, nameOf, adHead) {
 // 날짜를 아는 페이지만 lastmod 를 단다. 모르는 날짜를 지어내지 않는다.
 const PRIVACY_EFFECTIVE = '2026-10-21'; // src/privacy.html 의 시행일
 
-function sitemapPages(sortedLog, posts, dojang) {
+function sitemapPages(sortedLog, posts, dojang, aiGuides, services) {
   const latest = (dates) => dates.filter(Boolean).sort().at(-1);
   const postDate = (p) => p.updated || p.date;
   return [
     { path: '/', lastmod: latest([...sortedLog.map((e) => e.date), ...posts.map(postDate)]) },
     { path: '/about' },
+    ...services.map((sv) => ({ path: `/p/${sv.id}`, lastmod: sortedLog.find((e) => e.service === sv.id)?.date })),
     { path: '/privacy', lastmod: PRIVACY_EFFECTIVE },
+    { path: '/learn' },
+    { path: '/trending' },
+    ...(aiGuides.length ? [{ path: '/ai' }, ...aiGuides.map((g) => ({ path: `/ai/${g.slug}` }))] : []),
+    { path: '/submit' },
+    { path: '/en' },
+    { path: '/en/submit' },
+    ...services.filter(hasEnglish).map((sv) => ({ path: `/en/p/${sv.id}` })),
     { path: '/dojang' },
     { path: '/dojang/ui' },
     ...dojang.refs.map((r) => ({ path: `/dojang/${r.slug}` })),
@@ -313,16 +261,21 @@ function build() {
   validate(services, log, posts);
   const ads = readAdConfig(process.env);
 
+  const dojang = readDojang(join(ROOT, 'data', 'dojang'));
+  const aiGuides = readAiGuides(join(ROOT, 'data', 'ai'));
+  const trending = readTrending(join(ROOT, 'data', 'trending.json'), join(ROOT, 'data', 'trending-ko.json'));
+
   const nameOf = Object.fromEntries(services.map((s) => [s.id, s.name]));
   const sortedLog = [...log].sort((a, b) => b.date.localeCompare(a.date));
+  const entriesOf = (id) => sortedLog.filter((e) => e.service === id);
+  // 자동 검사 결과(CI 가 data/checks.json 에 기록한다). 없으면 배지를 달지 않는다.
+  const checks = existsSync(join(ROOT, 'data', 'checks.json')) ? readJson('checks.json') : {};
 
   const parts = {
-    heroMeta: renderHeroMeta(services, sortedLog),
-    services: [...services.map(renderService), renderNextSlot(services.length)].join('\n'),
+    heroMeta: renderHomeMeta(services, posts, dojang, aiGuides),
+    services: [...services.map((sv, i) => renderService(sv, i, entriesOf(sv.id).length, checks[sv.id])), renderNextSlot()].join('\n'),
     marketFilters: renderMarketFilters(services),
-    details: services.map(renderDetail).join('\n'),
-    logFilters: renderLogFilters(services, sortedLog),
-    log: sortedLog.map((e) => renderLogEntry(e, nameOf[e.service])).join('\n'),
+    toolbox: renderToolbox(dojang, aiGuides, trending),
     data: renderData(services),
     adHead: renderAdHead(ads),
     adHub: renderAdHub(ads),
@@ -334,17 +287,32 @@ function build() {
   writeFileSync(join(DIST, 'privacy.html'), fillTemplate('privacy.html', { adHead: parts.adHead }));
   writeFileSync(join(DIST, 'about.html'), renderAbout(services, posts, parts.adHead));
   writePosts(posts, nameOf, parts.adHead);
-  const dojang = readDojang(join(ROOT, 'data', 'dojang'));
+  mkdirSync(join(DIST, 'p'), { recursive: true });
+  for (const sv of services) writeFileSync(join(DIST, 'p', `${sv.id}.html`), renderProject(sv, entriesOf(sv.id), checks[sv.id], parts.adHead));
   writeDojang(dojang, parts.adHead);
+  writeFileSync(join(DIST, 'learn.html'), renderLearn(dojang, posts, parts.adHead));
+  writeFileSync(join(DIST, 'submit.html'), renderSubmit(parts.adHead));
+  // 영어 페이지: 영어 소개가 있는 작품만
+  mkdirSync(join(DIST, 'en', 'p'), { recursive: true });
+  writeFileSync(join(DIST, 'en.html'), renderEnHome(services, checks, parts.adHead));
+  writeFileSync(join(DIST, 'en', 'submit.html'), renderEnSubmit(parts.adHead));
+  for (const sv of services.filter(hasEnglish)) writeFileSync(join(DIST, 'en', 'p', `${sv.id}.html`), renderEnProject(sv, checks[sv.id], parts.adHead));
+  if (aiGuides.length) {
+    mkdirSync(join(DIST, 'ai'), { recursive: true });
+    writeFileSync(join(DIST, 'ai.html'), renderAiIndex(aiGuides, parts.adHead));
+    for (const g of aiGuides) writeFileSync(join(DIST, 'ai', `${g.slug}.html`), renderRef(g, parts.adHead, { base: '/ai', parent: 'AI 활용', nav: 'ai' }));
+  }
+  writeFileSync(join(DIST, 'trending.html'), renderTrending(trending, parts.adHead));
+  writeFileSync(join(DIST, 'search-index.json'), JSON.stringify(buildSearchIndex(dojang, aiGuides, services)));
   for (const file of STATIC_FILES) cpSync(join(SRC, file), join(DIST, file));
   const adsTxt = renderAdsTxt(ads);
   if (adsTxt) writeFileSync(join(DIST, 'ads.txt'), adsTxt);
   writeFileSync(join(DIST, 'robots.txt'), renderRobots());
-  writeFileSync(join(DIST, 'sitemap.xml'), renderSitemap(sitemapPages(sortedLog, posts, dojang)));
+  writeFileSync(join(DIST, 'sitemap.xml'), renderSitemap(sitemapPages(sortedLog, posts, dojang, aiGuides, services)));
   checkInternalLinks(DIST);
 
   const adState = !ads.client ? '광고 꺼짐' : ads.slot ? '광고 스크립트+광고 칸+ads.txt' : '광고 스크립트+ads.txt(광고 칸 없음)';
-  console.log(`빌드 완료: 서비스 ${services.length}개, 실험 일지 ${log.length}개, 개발기 ${posts.length}편, ${adState} → dist/`);
+  console.log(`빌드 완료: 서비스 ${services.length}개, 일지 ${log.length}개, 개발기 ${posts.length}편, ${adState} → dist/`);
 }
 
 try {

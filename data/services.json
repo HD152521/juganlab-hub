@@ -60,7 +60,10 @@
         "label": "모의고사 문제",
         "value": 788
       }
-    ]
+    ],
+    "name_en": "CertNote",
+    "summary_en": "A free study-note site for IT certifications, split into weekly and daily lessons. Every day has a key-point summary, a glossary and practice questions, and mock exams let you test yourself under exam conditions. The content is written in Korean.",
+    "category": "study"
   },
   {
     "id": "payment-tracker",
@@ -122,154 +125,9 @@
         "label": "소스 보기 (GitHub)",
         "url": "https://github.com/HD152521/record-payment"
       }
-    ]
-  },
-  {
-    "id": "ui-dojang",
-    "name": "UI 도감",
-    "type": "guide",
-    "status": "live",
-    "tags": [
-      "UI·UX",
-      "디자인",
-      "애니메이션",
-      "심리"
     ],
-    "summary": "토글 vs 체크박스처럼 헷갈리는 화면 요소를 직접 눌러 보며 익히는 UI 도감입니다. 38개 항목을 실제로 동작하는 데모로 보고, 언제 쓰고 피할지 확인한 뒤 코드를 복사해 가져갑니다.",
-    "groups": [
-      {
-        "name": "고르기·입력",
-        "items": [
-          "토글 vs 체크박스",
-          "라디오 vs 체크박스",
-          "드롭다운 vs 피커",
-          "캘린더",
-          "약관 동의",
-          "간편 로그인",
-          "기본값 효과"
-        ]
-      },
-      {
-        "name": "알림·겹치는 화면",
-        "items": [
-          "토스트 vs 스낵바",
-          "알럿 vs 컨펌",
-          "팝업 vs 모달",
-          "모달 등장",
-          "바텀시트 vs 드로어",
-          "드로어",
-          "푸시"
-        ]
-      },
-      {
-        "name": "메뉴·이동",
-        "items": [
-          "케밥(⋮)",
-          "미트볼(…)",
-          "베지 버거",
-          "도너",
-          "상단 탭",
-          "페이지네이션",
-          "페이징 vs 무한 스크롤",
-          "플로팅 버튼",
-          "플로팅 vs 하단 고정"
-        ]
-      },
-      {
-        "name": "화면 구성",
-        "items": [
-          "히어로",
-          "스플래시",
-          "온보딩",
-          "플레이스홀더"
-        ]
-      },
-      {
-        "name": "움직임",
-        "items": [
-          "페이드 업",
-          "계단(순서대로 등장)",
-          "스프링",
-          "카운트업",
-          "타이핑",
-          "스크램블",
-          "마스크 리빌",
-          "확대 전환",
-          "공유 요소"
-        ]
-      },
-      {
-        "name": "심리",
-        "items": [
-          "앵커링",
-          "피크엔드 법칙"
-        ]
-      }
-    ],
-    "howto": [
-      "관심 있는 묶음(고르기·알림·메뉴·화면 구성·움직임·심리)을 고르거나 검색창에 모달, 탭 같은 단어를 입력합니다.",
-      "데모를 직접 눌러 봅니다. 비교 항목은 두 가지가 나란히 있어 차이를 바로 느낄 수 있습니다.",
-      "'이럴 때 쓰세요 / 이럴 땐 피하세요'로 내 서비스에 맞는지 판단합니다.",
-      "'코드 보기·복사'를 열어 HTML·CSS·JS 탭에서 필요한 코드를 복사해 내 페이지에 붙입니다."
-    ],
-    "url": "https://juganlab.com/dojang/ui",
-    "since": "2026-11-24",
-    "features": [
-      {
-        "title": "실제로 동작하는 데모 38개",
-        "desc": "그림이 아니라 눌러 볼 수 있는 UI입니다. 키보드로도 조작하고, 움직임 줄이기 설정을 따릅니다."
-      },
-      {
-        "title": "비교형 항목",
-        "desc": "토글 vs 체크박스, 토스트 vs 스낵바처럼 헷갈리는 쌍을 한 화면에 나란히 놓았습니다."
-      },
-      {
-        "title": "쓸 때 / 피할 때",
-        "desc": "항목마다 언제 쓰고 언제 피해야 하는지 기준을 적었습니다."
-      },
-      {
-        "title": "복사해 쓰는 코드",
-        "desc": "라이브러리 없이 순수 HTML·CSS·JS로 만들어, 붙여 넣으면 그대로 동작합니다."
-      }
-    ]
-  },
-  {
-    "id": "dev-dojang",
-    "name": "개발 도감",
-    "type": "guide",
-    "url": "https://juganlab.com/dojang",
-    "status": "live",
-    "since": "2026-11-24",
-    "tags": [
-      "개발",
-      "HTTP",
-      "Git",
-      "정규식"
-    ],
-    "summary": "HTTP 상태 코드, Git 상황별 명령, 정규식처럼 개발하다 자주 찾아보는 내용을 상황 중심으로 모은 참고 도감입니다. 검색하고 예시를 눌러 바로 복사할 수 있습니다.",
-    "features": [
-      {
-        "title": "HTTP 상태 코드",
-        "desc": "언제 나오고 어떻게 고치는지 중심으로 정리했습니다."
-      },
-      {
-        "title": "Git 상황별 명령",
-        "desc": "'방금 커밋 메시지를 고치고 싶어요'처럼 겪는 상황으로 찾고, 위험한 명령에는 주의를 적었습니다."
-      },
-      {
-        "title": "정규식",
-        "desc": "문자 종류·횟수·그룹 조각과 휴대폰 번호·날짜 같은 실전 패턴을 모았습니다."
-      },
-      {
-        "title": "검색과 복사",
-        "desc": "항목을 검색하고 예시 코드를 한 번에 복사합니다."
-      }
-    ],
-    "howto": [
-      "도감 목록에서 필요한 도감(HTTP·Git·정규식)을 고릅니다.",
-      "검색창이나 묶음 이름으로 상황에 맞는 항목을 찾습니다.",
-      "예시 코드의 '복사'를 눌러 터미널이나 코드에 붙여 넣습니다.",
-      "'주의'가 적힌 항목은 기록을 지울 수 있으니 읽고 실행합니다."
-    ]
+    "name_en": "Payment Tracker",
+    "summary_en": "A Chrome extension that automatically records where each payment method is registered and how much goes out every month. It also gathers server and API costs (AWS, OpenAI and more) into one screen each morning. A Chrome Web Store listing is in preparation.",
+    "category": "finance"
   }
 ]

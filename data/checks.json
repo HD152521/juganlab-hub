@@ -1,0 +1,16 @@
+{
+  "payment-tracker": {
+    "url": "",
+    "date": "2026-11-25",
+    "result": "warn",
+    "items": [
+      "소스 보기 (GitHub) 형식 확인(https, 단축·IP·직접 다운로드 아님)",
+      "소스 보기 (GitHub) 접속 확인(HTTP 200)",
+      "Google Safe Browsing 검사는 건너뜀(키 없음)",
+      "manifest 권한 6개 확인, 넓은 권한 1개 표시",
+      "소스 파일 30개 훑어봄(휴리스틱)",
+      "주의: 권한 <all_urls>: 모든 사이트의 데이터 읽기·변경",
+      "주의: content script 가 모든 사이트에서 실행됩니다"
+    ]
+  }
+}

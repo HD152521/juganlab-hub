@@ -127,83 +127,44 @@
     });
   };
 
-  // ── 실험 일지: 서비스별 필터 + 처음엔 최근 몇 개만 ──
-  // 스크립트가 없으면 전부 보인다. 숨김은 여기서만 건다.
-  const LOG_PREVIEW = 6;
-
-  const setupLog = () => {
-    const entries = [...document.querySelectorAll('#timeline .entry')];
-    const more = document.getElementById('log-more');
-    const chips = [...document.querySelectorAll('.log-filters .filter-chip')];
-    let filter = 'all';
-    let expanded = false;
-
-    const render = () => {
-      const matching = entries.filter((e) => filter === 'all' || e.dataset.service === filter);
-      entries.forEach((e) => {
-        e.hidden = !matching.includes(e) || (!expanded && matching.indexOf(e) >= LOG_PREVIEW);
-      });
-      const hiddenCount = expanded ? 0 : Math.max(0, matching.length - LOG_PREVIEW);
-      more.hidden = hiddenCount === 0;
-      more.textContent = `이전 기록 ${hiddenCount}개 더 보기`;
-    };
-
-    chips.forEach((chip) =>
-      chip.addEventListener('click', () => {
-        filter = chip.dataset.filter;
-        expanded = false;
-        chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
-        render();
-      }),
-    );
-    more?.addEventListener('click', () => {
-      expanded = true;
-      render();
-    });
-    if (more) render();
-  };
-
   // ── 마켓: 종류 필터 + 검색 + 상세 창. 스크립트가 없으면 전부 보이고 상세는 열리지 않는다 ──
   const setupMarket = () => {
     const cards = [...document.querySelectorAll('#market-grid .exp[data-type]')];
-    const chips = [...document.querySelectorAll('.market-chip')];
+    const typeChips = [...document.querySelectorAll('[data-type-filter]')];
+    const catChips = [...document.querySelectorAll('[data-cat-filter]')];
     const search = document.getElementById('market-search');
     const empty = document.getElementById('market-empty');
     let type = 'all';
+    let cat = 'all';
 
     const render = () => {
       const q = (search?.value || '').trim().toLowerCase();
       let shown = 0;
       cards.forEach((card) => {
-        const ok = (type === 'all' || card.dataset.type === type) && (!q || card.dataset.search.includes(q));
+        const ok = (type === 'all' || card.dataset.type === type) && (cat === 'all' || card.dataset.cat === cat) && (!q || card.dataset.search.includes(q));
         card.hidden = !ok;
         if (ok) shown += 1;
       });
-      // "다음 실험" 자리는 검색 중에는 숨긴다
-      document.querySelectorAll('#market-grid .exp:not([data-type])').forEach((n) => (n.hidden = Boolean(q) || type !== 'all'));
+      // "내 작품 올리기" 자리는 검색·필터 중에는 숨긴다
+      document.querySelectorAll('#market-grid .exp:not([data-type])').forEach((n) => (n.hidden = Boolean(q) || type !== 'all' || cat !== 'all'));
       if (empty) empty.hidden = shown !== 0;
     };
 
-    chips.forEach((chip) =>
+    typeChips.forEach((chip) =>
       chip.addEventListener('click', () => {
         type = chip.dataset.typeFilter;
-        chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+        typeChips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+        render();
+      }),
+    );
+    catChips.forEach((chip) =>
+      chip.addEventListener('click', () => {
+        cat = chip.dataset.catFilter;
+        catChips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
         render();
       }),
     );
     search?.addEventListener('input', render);
-
-    document.querySelectorAll('[data-detail]').forEach((btn) =>
-      btn.addEventListener('click', () => {
-        const dialog = document.getElementById(`detail-${btn.dataset.detail}`);
-        if (dialog && typeof dialog.showModal === 'function') dialog.showModal();
-      }),
-    );
-    document.querySelectorAll('dialog.detail').forEach((dialog) =>
-      dialog.addEventListener('click', (event) => {
-        if (event.target === dialog) dialog.close();
-      }),
-    );
   };
 
   // ── 토스트: 짧은 알림. 스크린리더에도 읽히도록 role=status ──
@@ -339,7 +300,7 @@
           .filter((s) => s.url)
           .map((s) => [`open ${s.id}`, { desc: `${s.name} 로 이동`, run: () => go(s.url) }]),
       ),
-      dojang: { desc: '도감(UI·개발 참고)으로 이동', run: () => go('/dojang') },
+      learn: { desc: '배우기(UI 도감·개발 참고)로 이동', run: () => go('/learn') },
       log: { desc: '실험 일지로 이동', run: () => go('#log') },
       about: { desc: '소개로 이동', run: () => go('#about') },
       contact: { desc: '메일 보내기', run: () => go('mailto:wkdrndydtlr@gmail.com') },
@@ -462,10 +423,87 @@
     });
   };
 
+  // 홈 검색: 사이트 전체(UI 도감·개발 참고·AI 활용·서비스)를 제목·요약으로 찾는다. 색인은 처음 눌렀을 때 한 번만 받는다.
+  const setupFinder = () => {
+    const form = document.getElementById('finder');
+    const input = document.getElementById('finder-input');
+    const out = document.getElementById('finder-out');
+    if (!form || !input || !out) return;
+    let index = null;
+    let loading = null;
+
+    const load = () => {
+      if (!loading) {
+        loading = fetch('/search-index.json')
+          .then((r) => (r.ok ? r.json() : []))
+          .catch(() => [])
+          .then((data) => (index = data));
+      }
+      return loading;
+    };
+
+    const row = (entry) => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = entry.u;
+      const kind = document.createElement('span');
+      kind.className = 'f-kind mono';
+      kind.textContent = entry.k;
+      const title = document.createElement('span');
+      title.className = 'f-title';
+      title.textContent = entry.t;
+      const sum = document.createElement('span');
+      sum.className = 'f-sum';
+      sum.textContent = entry.s;
+      a.append(kind, title, sum);
+      li.append(a);
+      return li;
+    };
+
+    const render = () => {
+      const q = input.value.trim().toLowerCase();
+      out.replaceChildren();
+      if (!q || !index) {
+        out.hidden = true;
+        return;
+      }
+      // 제목에 들어 있으면 앞에, 요약에만 있으면 뒤에
+      const hits = index
+        .map((e) => ({ e, score: e.t.toLowerCase().includes(q) ? 2 : e.s.toLowerCase().includes(q) || e.k.toLowerCase().includes(q) ? 1 : 0 }))
+        .filter((x) => x.score)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8)
+        .map((x) => x.e);
+      if (!hits.length) {
+        const li = document.createElement('li');
+        li.className = 'finder-empty';
+        li.textContent = '찾는 자료가 없습니다. 다른 단어로 검색해 보세요.';
+        out.append(li);
+      } else {
+        out.append(...hits.map(row));
+      }
+      out.hidden = false;
+    };
+
+    input.addEventListener('focus', load);
+    input.addEventListener('input', () => load().then(render));
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const first = out.querySelector('a');
+      if (first) location.href = first.href;
+    });
+    document.addEventListener('click', (event) => {
+      if (!form.contains(event.target)) out.hidden = true;
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') out.hidden = true;
+    });
+  };
+
   setupGridLight();
   setupCounters();
   setupPing();
-  setupLog();
   setupMarket();
+  setupFinder();
   setupPalette();
 })();

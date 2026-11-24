@@ -221,3 +221,6 @@
 .dm-default-effect-n{text-align:right;color:var(--ink)}
 .dm-default-effect-note{margin:0;font-size:11.5px;line-height:1.5;color:var(--ink-faint)}
 @media (prefers-reduced-motion:reduce){.dm-default-effect-fill{transition:none}}
+/* fieldset 의 legend 는 테두리에 걸쳐 그려진다. float 로 일반 흐름에 넣는다 */
+.dm-radio-vs-checkbox-label { float: left; width: 100%; }
+.dm-radio-vs-checkbox-label + * { clear: both; }

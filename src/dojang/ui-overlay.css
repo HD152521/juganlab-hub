@@ -346,3 +346,26 @@
 .dm-push-phone .dm-push-acts .dm-btn{padding:6px 10px;font-size:12px;white-space:nowrap}
 .dm-push-ctrl button:focus-visible,.dm-push-banner:focus-visible,.dm-push-phone button:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.dm-push-banner{transition:none}}
+/* 겹침 데모: 뒤에 깔린 '앱 화면' 흉내. 모달·시트·드로어가 무엇을 덮는지 보이게 한다 */
+.dm-stage:is([data-demo="toast-vs-snackbar"], [data-demo="alert-vs-confirm"], [data-demo="popup-vs-modal"], [data-demo="modal-enter"], [data-demo="bottomsheet-vs-drawer"], [data-demo="drawer"]) [class$="-panel"] {
+  min-height: 300px;
+  padding-bottom: 120px;
+}
+
+.dm-stage:is([data-demo="toast-vs-snackbar"], [data-demo="alert-vs-confirm"], [data-demo="popup-vs-modal"], [data-demo="modal-enter"], [data-demo="bottomsheet-vs-drawer"], [data-demo="drawer"]) [class$="-panel"]::after {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  height: 96px;
+  border-radius: 10px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--line), var(--line)) 14px 14px / 34% 10px no-repeat,
+    linear-gradient(var(--line), var(--line)) 14px 34px / calc(100% - 28px) 8px no-repeat,
+    linear-gradient(var(--line), var(--line)) 14px 52px / 72% 8px no-repeat,
+    linear-gradient(var(--line), var(--line)) 14px 70px / 48% 8px no-repeat,
+    var(--paper-deep);
+  border: 1px solid var(--line);
+}

@@ -1,0 +1,32 @@
+name: check-pr
+
+# 작품·일지를 올리는 PR 을 검사한다. 포크 PR 에는 비밀값이 전달되지 않으므로
+# 여기서는 형식·접속·확장 프로그램 권한만 본다. 전체 검사(Safe Browsing·VirusTotal)는 병합 뒤 check-main 이 한다.
+on:
+  pull_request:
+    paths:
+      - 'data/services.json'
+      - 'data/log.json'
+      - 'data/posts/**'
+      - 'lib/**'
+      - 'scripts/check-submission.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 빌드(데이터 형식 검사)
+        run: node build.mjs
+      - name: 단위 시험
+        run: node --test test/checks.test.mjs
+      - name: 작품 자동 검사
+        run: node scripts/check-submission.mjs --all
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

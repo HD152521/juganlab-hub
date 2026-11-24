@@ -93,3 +93,7 @@
   .dm-typing-caret { animation: none; }
   .dm-zoom-transition-thumb, .dm-shared-element-row { transition: none; }
 }
+
+/* 확대 전환: 본문 글자가 페이지 기본색(어두움)으로 덮여 보이지 않던 문제 */
+.dm-zoom-transition-card .dm-zoom-transition-title,
+.dm-zoom-transition-card .dm-zoom-transition-text { color: #fff; }
