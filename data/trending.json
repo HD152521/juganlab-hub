@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-24T12:49:18.728Z",
+  "updatedAt": "2026-11-25T23:36:11.524Z",
   "topics": [
     "agent-skills",
     "claude-skills",
@@ -55,51 +55,76 @@
     ]
   },
   "daily": {
-    "date": "2026-11-24",
+    "date": "2026-11-26",
     "items": [
       {
-        "name": "MaryCache/tsuzuri",
-        "url": "https://github.com/MaryCache/tsuzuri",
-        "description": "Claude Code・Codex・Antigravity などの AI コーディングエージェントに、執筆意図と文機能つきで一文ずつ日本語の文章を執筆・レビューさせるスキルと閲覧アプリ",
-        "stars": 120,
-        "language": "Python",
-        "created": "2026-11-23"
+        "name": "erkamyaman/rea-games",
+        "url": "https://github.com/erkamyaman/rea-games",
+        "description": "Reverse-engineer any game, rebuild it in any engine (web, Rust, Godot) and prove the rebuild plays the same, frame by frame. Behavior specs in the open GAME.md format.",
+        "stars": 187,
+        "language": "JavaScript",
+        "created": "2026-11-25"
       },
       {
-        "name": "AyushRajSinghParihar/weaponized-curiosity",
-        "url": "https://github.com/AyushRajSinghParihar/weaponized-curiosity",
-        "description": "Portable Agent Skill for evidence-driven research, experimentation, and bounded optimization",
-        "stars": 114,
-        "language": "Python",
-        "created": "2026-11-23"
-      },
-      {
-        "name": "EL4CTEO/shrink-anything",
-        "url": "https://github.com/EL4CTEO/shrink-anything",
-        "description": "Less code, same tests passing: delete the dead code, files, dependencies and assets in any codebase, and keep each cut only if your own tests still pass.",
-        "stars": 88,
-        "language": "Rust",
-        "created": "2026-11-23"
-      },
-      {
-        "name": "TegevoXi39/ccu-tool",
-        "url": "https://github.com/TegevoXi39/ccu-tool",
-        "description": "Sessions rotate, you keep working.",
-        "stars": 57,
-        "language": "C++",
+        "name": "matheusmongarde/garimpo",
+        "url": "https://github.com/matheusmongarde/garimpo",
+        "description": "Prospecção open source do Google Maps ao Pix: acha negócios no Maps, gera um site-prévia com o nome de cada um, conversa no WhatsApp e cobra por Pix, Mercado Pago ou Stripe. Pagou, fecha sozinho. Roda",
+        "stars": 173,
+        "language": "TypeScript",
         "created": "2026-11-24"
       },
       {
-        "name": "bisnishub/fleetnotch",
-        "url": "https://github.com/bisnishub/fleetnotch",
-        "description": "Your whole fleet, in the notch. Every Mac, server, AI agent and AI subscription at a glance — native macOS, read-only.",
-        "stars": 29,
-        "language": "Swift",
-        "created": "2026-11-23"
+        "name": "Lukcla3889/postman-agent",
+        "url": "https://github.com/Lukcla3889/postman-agent",
+        "description": "Postman Agent for Windows 10/11. Runs API requests and collections on your local machine, letting you send calls to localhost, inspect responses and debug endpoints without leaving the desktop.",
+        "stars": 169,
+        "language": "",
+        "created": "2026-11-24"
+      },
+      {
+        "name": "Locorreia1992/native-instruments-reaktor-6",
+        "url": "https://github.com/Locorreia1992/native-instruments-reaktor-6",
+        "description": "Native Instruments Reaktor 6 for Windows 10/11. Builds custom synths, samplers and effects by patching modules in a visual modular environment, or plays and tweaks thousands of prebuilt instruments an",
+        "stars": 163,
+        "language": "",
+        "created": "2026-11-24"
+      },
+      {
+        "name": "kofimehta06/capture-one-23",
+        "url": "https://github.com/kofimehta06/capture-one-23",
+        "description": "Capture One 23 for Windows 10/11. Edits RAW photos with precise color, exposure and layer adjustments, tethers your camera for instant review and exports finished images for client delivery or print.",
+        "stars": 160,
+        "language": "",
+        "created": "2026-11-24"
       }
     ]
   },
   "history": [
+    {
+      "date": "2026-11-26",
+      "items": [
+        {
+          "name": "erkamyaman/rea-games",
+          "stars": 187
+        },
+        {
+          "name": "matheusmongarde/garimpo",
+          "stars": 173
+        },
+        {
+          "name": "Lukcla3889/postman-agent",
+          "stars": 169
+        },
+        {
+          "name": "Locorreia1992/native-instruments-reaktor-6",
+          "stars": 163
+        },
+        {
+          "name": "kofimehta06/capture-one-23",
+          "stars": 160
+        }
+      ]
+    },
     {
       "date": "2026-11-24",
       "items": [
