@@ -127,46 +127,6 @@
     });
   };
 
-  // ── 마켓: 종류 필터 + 검색 + 상세 창. 스크립트가 없으면 전부 보이고 상세는 열리지 않는다 ──
-  const setupMarket = () => {
-    const cards = [...document.querySelectorAll('#market-grid .exp[data-type]')];
-    const typeChips = [...document.querySelectorAll('[data-type-filter]')];
-    const catChips = [...document.querySelectorAll('[data-cat-filter]')];
-    const search = document.getElementById('market-search');
-    const empty = document.getElementById('market-empty');
-    let type = 'all';
-    let cat = 'all';
-
-    const render = () => {
-      const q = (search?.value || '').trim().toLowerCase();
-      let shown = 0;
-      cards.forEach((card) => {
-        const ok = (type === 'all' || card.dataset.type === type) && (cat === 'all' || card.dataset.cat === cat) && (!q || card.dataset.search.includes(q));
-        card.hidden = !ok;
-        if (ok) shown += 1;
-      });
-      // "내 작품 올리기" 자리는 검색·필터 중에는 숨긴다
-      document.querySelectorAll('#market-grid .exp:not([data-type])').forEach((n) => (n.hidden = Boolean(q) || type !== 'all' || cat !== 'all'));
-      if (empty) empty.hidden = shown !== 0;
-    };
-
-    typeChips.forEach((chip) =>
-      chip.addEventListener('click', () => {
-        type = chip.dataset.typeFilter;
-        typeChips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
-        render();
-      }),
-    );
-    catChips.forEach((chip) =>
-      chip.addEventListener('click', () => {
-        cat = chip.dataset.catFilter;
-        catChips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
-        render();
-      }),
-    );
-    search?.addEventListener('input', render);
-  };
-
   // ── 토스트: 짧은 알림. 스크린리더에도 읽히도록 role=status ──
   let toastEl = null;
   let toastTimer = 0;
@@ -503,7 +463,6 @@
   setupGridLight();
   setupCounters();
   setupPing();
-  setupMarket();
   setupFinder();
   setupPalette();
 })();

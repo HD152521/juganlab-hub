@@ -27,6 +27,7 @@
   <link rel="stylesheet" href="styles.css">
   <script>try{var t=localStorage.getItem("jl-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
   <script src="app.js" defer></script>
+  <script src="market.js" defer></script>
 <!-- @adHead -->
 </head>
 <body>
@@ -54,20 +55,25 @@
 
   <main>
     <section class="hero wrap" aria-labelledby="hero-title">
-      <p class="hero-label mono reveal">Jugan Lab · 메이커 마켓</p>
-      <h1 id="hero-title" class="reveal">처음 만든 것, <em>여기서 알리세요</em></h1>
-      <p class="hero-lede reveal">
-        개발은 처음인데 알릴 곳이 없어서 직접 만든 곳입니다. 웹 서비스, 앱, 확장 프로그램을 개발일지와 함께 올리면 누구나 둘러보고 써 볼 수 있습니다. 올라온 작품은 주소와 권한을 자동으로 검사합니다.
-      </p>
-      <div class="hero-cta reveal">
-        <a class="mail" href="#market">작품 둘러보기</a>
-        <a class="ghost-link" href="/submit">내 작품 올리기 <span aria-hidden="true">→</span></a>
+      <div class="hero-grid">
+        <div class="hero-main">
+          <p class="hero-label mono reveal">Jugan Lab · 메이커 마켓</p>
+          <h1 id="hero-title" class="reveal">처음 만든 웹·앱·확장 프로그램을 <em>올리고, 써 보는 곳</em></h1>
+          <p class="hero-lede reveal">
+            만든 것을 <strong>개발일지와 함께</strong> 올리면 누구나 둘러보고 써 볼 수 있습니다. 완성품만이 아니라 헤매고 고친 과정까지 같이 보이는 것이 이 사이트의 특징입니다.
+          </p>
+          <div class="hero-cta reveal">
+            <a class="mail" href="#market">작품 둘러보기</a>
+            <a class="ghost-link" href="/submit">내 작품 올리기 <span aria-hidden="true">→</span></a>
+          </div>
+          <ul class="hero-for reveal" aria-label="이런 분께 맞습니다">
+            <li>개발을 처음 해서, 만든 것을 보여 줄 곳이 없는 사람</li>
+            <li>새로 나온 작은 웹·앱·확장 프로그램을 써 보고 싶은 사람</li>
+            <li>남이 어떻게 만들었는지 일지로 배우고 싶은 사람</li>
+          </ul>
+        </div>
+        <!-- @how -->
       </div>
-      <form class="finder reveal" id="finder" role="search" autocomplete="off">
-        <label class="visually-hidden" for="finder-input">작품·자료 검색</label>
-        <input id="finder-input" type="search" placeholder="작품과 자료 검색 (예: 구독, 모달, 프롬프트, 정규식)" aria-controls="finder-out">
-        <ul class="finder-out" id="finder-out" role="listbox" hidden></ul>
-      </form>
       <div class="hero-meta mono reveal">
 <!-- @heroMeta -->
         <span class="hint">팁 · <kbd>/</kbd> 를 눌러 보세요</span>
@@ -80,20 +86,12 @@
         <h2 id="market-title">올라온 작품</h2>
       </div>
 
-      <div class="market-bar">
-        <div class="market-filters" role="group" aria-label="종류별로 보기">
 <!-- @marketFilters -->
-        </div>
-        <label class="market-search">
-          <span class="visually-hidden">작품 검색</span>
-          <input type="search" id="market-search" placeholder="이름·만든 사람·태그 검색" autocomplete="off">
-        </label>
-      </div>
-      <p class="market-empty" id="market-empty" hidden>찾는 작품이 없습니다. 다른 단어로 검색해 보세요.</p>
 
       <div class="experiments" id="market-grid">
 <!-- @services -->
       </div>
+<!-- @marketMore -->
     </section>
 
     <section id="toolbox" class="section wrap" aria-labelledby="tool-title">
@@ -102,6 +100,11 @@
         <h2 id="tool-title">만드는 사람을 위한 도구함</h2>
       </div>
       <p class="section-lede">개발이 처음이어도 막히지 않도록 모아 둔 자료입니다. 작품 없이 이것만 써도 됩니다.</p>
+      <form class="finder" id="finder" role="search" autocomplete="off">
+        <label class="visually-hidden" for="finder-input">작품·도구함 전체 검색</label>
+        <input id="finder-input" type="search" placeholder="도구함·작품 전체 검색 (예: 모달, 프롬프트, 정규식)" aria-controls="finder-out">
+        <ul class="finder-out" id="finder-out" role="listbox" hidden></ul>
+      </form>
       <div class="toolbox">
 <!-- @toolbox -->
       </div>

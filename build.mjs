@@ -13,13 +13,15 @@ import { readTrending, renderTrending } from './lib/trending.mjs';
 import { buildSearchIndex, renderHeroMeta as renderHomeMeta, renderToolbox } from './lib/home.mjs';
 import { hasEnglish, renderEnHome, renderEnProject, renderEnSubmit } from './lib/en.mjs';
 import { CATEGORIES, categoryOf, renderCheck, renderProject, statusText, TYPE_LABEL, typeOf } from './lib/projects.mjs';
+import { renderCard, renderHow, renderMarketBar, renderMoreButton, renderSlot } from './lib/market.mjs';
+import { howtoOf, screenshotsOf, validateMedia } from './lib/media.mjs';
 import { readPosts } from './lib/posts.mjs';
 import { checkInternalLinks, renderRobots, renderSitemap } from './lib/seo.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const SRC = join(ROOT, 'src');
 const DIST = join(ROOT, 'dist');
-const STATIC_FILES = ['styles.css', 'app.js', 'favicon.ico', 'icon.svg', 'apple-touch-icon.png', 'icon-512.png'];
+const STATIC_FILES = ['styles.css', 'app.js', 'market.js', 'favicon.ico', 'icon.svg', 'apple-touch-icon.png', 'icon-512.png'];
 
 // 광고 설정은 Vercel 환경변수로만 받는다. 값이 없으면 광고 스크립트·광고 칸·ads.txt 를 하나도 만들지 않는다.
 //   ADSENSE_CLIENT    게시자 ID (ca-pub-16자리)
@@ -65,6 +67,10 @@ function validate(services, log, posts) {
     if (s.ping && !/^https:\/\//.test(s.ping)) errors.push(`${at}: ping 은 https:// 주소여야 합니다`);
     if (s.category && !CATEGORIES.some((c) => c.id === s.category)) errors.push(`${at}: category 는 ${CATEGORIES.map((c) => c.id).join(' / ')} 중 하나여야 합니다`);
     if (s.type && !TYPE_LABEL[s.type]) errors.push(`${at}: type 은 ${Object.keys(TYPE_LABEL).join(' / ')} 중 하나여야 합니다`);
+    validateMedia(s, at, errors);
+    for (const ref of [s.thumbnail, ...screenshotsOf(s).map((x) => x.src), ...howtoOf(s).map((x) => x.image)]) {
+      if (typeof ref === 'string' && ref.startsWith('/') && !existsSync(join(SRC, ref))) errors.push(`${at}: 이미지 파일이 없습니다 (src${ref})`);
+    }
     for (const f of s.features ?? []) {
       if (!f.title) errors.push(`${at}: features 항목에는 title 이 필요합니다`);
     }
@@ -96,62 +102,42 @@ function validate(services, log, posts) {
 
 const code = (index) => `EXP-${String(index + 1).padStart(2, '0')}`;
 
-function renderStats(stats = []) {
-  if (!stats.length) return '';
-  const cells = stats
-    .map((s) => `<div><dt>${escapeHtml(s.label)}</dt><dd data-count="${s.value}">${s.value.toLocaleString('ko-KR')}</dd></div>`)
-    .join('');
-  return `\n          <dl class="stats">${cells}</dl>`;
-}
-
-function renderTags(tags = []) {
-  if (!tags.length) return '';
-  return `
-          <ul class="tags">${tags.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`;
-}
-
-// 한눈에 많이 보이도록 카드를 작게 만든다. 카드 전체가 작품 페이지로 가는 링크다.
-function renderService(s, index, entryCount, check) {
-  const ping = s.ping && s.status !== 'building' ? ` data-ping="${escapeHtml(s.ping)}"` : '';
-  const statusClass = s.status === 'building' ? 'status' : `status ${s.status}`;
+// 작품 카드·필터 막대(한국어). 영어 홈은 lib/en.mjs 가 같은 조각(lib/market.mjs)으로 만든다.
+const koItem = (s, entryCount, check) => {
   const cat = categoryOf(s);
-  const search = [s.name, s.summary, s.author, cat.label, ...(s.tags ?? [])].filter(Boolean).join(' ').toLowerCase();
-  const foot = [s.author ? `by ${escapeHtml(s.author)}` : '', entryCount ? `일지 ${entryCount}` : '', renderCheck(check)].filter(Boolean).join(' ');
-  return `        <article class="exp exp-c" id="svc-${s.id}" data-type="${typeOf(s)}" data-cat="${cat.id}" data-search="${escapeHtml(search)}">
-          <div class="exp-top mono">
-            <span>${TYPE_LABEL[typeOf(s)]} · ${cat.label}</span>
-            <span class="${statusClass}"${ping}>${escapeHtml(statusText(s))}</span>
-          </div>
-          <h3><a class="exp-title" href="/p/${s.id}">${escapeHtml(s.name)}</a></h3>
-          <p>${escapeHtml(s.summary)}</p>
-          ${(s.tags ?? []).length ? `<ul class="tags">${s.tags.slice(0, 3).map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
-          ${foot ? `<p class="exp-meta mono">${foot}</p>` : ''}
-        </article>`;
+  return {
+    s,
+    href: `/p/${s.id}`,
+    name: s.name,
+    summary: s.summary,
+    type: typeOf(s),
+    typeLabel: TYPE_LABEL[typeOf(s)],
+    cat: cat.id,
+    catLabel: cat.label,
+    statusClass: s.status === 'building' ? 'status' : `status ${s.status}`,
+    statusText: statusText(s),
+    ping: s.ping && s.status !== 'building' ? s.ping : '',
+    logCount: entryCount,
+    badge: renderCheck(check),
+  };
+};
+
+// 기본 순서는 최신순(since 내림차순, 날짜 없으면 뒤). 같으면 데이터 순서.
+const newestFirst = (services) => [...services].sort((a, b) => (b.since ?? '').localeCompare(a.since ?? ''));
+
+function renderMarket(services, entriesOf, checks) {
+  const sorted = newestFirst(services);
+  return [...sorted.map((sv, i) => renderCard(koItem(sv, entriesOf(sv.id).length, checks[sv.id]), i, 'ko')), renderSlot('ko', '/submit')].join('\n');
 }
 
-// 종류 줄과 카테고리 줄. 카테고리는 비어 있어도 보여 줘서 어떤 분류가 있는지 알 수 있게 한다.
-function renderMarketFilters(services) {
-  const chip = (attr, value, label, pressed, count) =>
-    `          <button type="button" class="filter-chip market-chip mono" data-${attr}="${value}" aria-pressed="${pressed}"${count === 0 ? ' data-empty' : ''}>${escapeHtml(label)} <span class="chip-n">${count}</span></button>`;
-  const types = Object.keys(TYPE_LABEL);
-  const typeRow = [chip('type-filter', 'all', '전체', true, services.length), ...types.map((t) => chip('type-filter', t, TYPE_LABEL[t], false, services.filter((s) => typeOf(s) === t).length))].join('\n');
-  const catRow = [chip('cat-filter', 'all', '모든 분류', true, services.length), ...CATEGORIES.map((c) => chip('cat-filter', c.id, c.label, false, services.filter((s) => categoryOf(s).id === c.id).length))].join('\n');
-  return `        <div class="market-row" role="group" aria-label="종류별로 보기">
-${typeRow}
-        </div>
-        <div class="market-row" role="group" aria-label="분류별로 보기">
-${catRow}
-        </div>`;
-}
-
-// 목록 끝에는 항상 "내 작품" 자리를 둔다.
-function renderNextSlot() {
-  return `        <a class="exp exp-c exp-slot" href="/submit" data-slot>
-          <div class="exp-top mono"><span>웹 · 앱 · 확장 프로그램</span></div>
-          <h3>여기에 내 작품 올리기</h3>
-          <p>처음 만든 것도 괜찮습니다. 올리면 이 자리에 카드가 생깁니다.</p>
-          <p class="exp-meta mono">올리는 방법 →</p>
-        </a>`;
+function renderMarketControls(services) {
+  return renderMarketBar(services, {
+    lang: 'ko',
+    types: Object.entries(TYPE_LABEL),
+    cats: CATEGORIES.map((c) => [c.id, c.label]),
+    typeOf,
+    catOf: (s) => categoryOf(s).id,
+  });
 }
 
 // 콘솔이 쓰는 최소 정보만 넘긴다. </script> 가 끼지 않도록 < 를 이스케이프한다.
@@ -273,8 +259,10 @@ function build() {
 
   const parts = {
     heroMeta: renderHomeMeta(services, posts, dojang, aiGuides),
-    services: [...services.map((sv, i) => renderService(sv, i, entriesOf(sv.id).length, checks[sv.id])), renderNextSlot()].join('\n'),
-    marketFilters: renderMarketFilters(services),
+    services: renderMarket(services, entriesOf, checks),
+    marketFilters: renderMarketControls(services),
+    marketMore: renderMoreButton('ko'),
+    how: renderHow('ko', '/submit'),
     toolbox: renderToolbox(dojang, aiGuides, trending),
     data: renderData(services),
     adHead: renderAdHead(ads),
@@ -305,6 +293,8 @@ function build() {
   writeFileSync(join(DIST, 'trending.html'), renderTrending(trending, parts.adHead));
   writeFileSync(join(DIST, 'search-index.json'), JSON.stringify(buildSearchIndex(dojang, aiGuides, services)));
   for (const file of STATIC_FILES) cpSync(join(SRC, file), join(DIST, file));
+  // 작품 이미지(src/img)는 그대로 복사한다
+  if (existsSync(join(SRC, 'img'))) cpSync(join(SRC, 'img'), join(DIST, 'img'), { recursive: true });
   const adsTxt = renderAdsTxt(ads);
   if (adsTxt) writeFileSync(join(DIST, 'ads.txt'), adsTxt);
   writeFileSync(join(DIST, 'robots.txt'), renderRobots());
