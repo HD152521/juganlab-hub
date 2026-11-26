@@ -63,8 +63,14 @@ create table public.projects (
   -- 추가 링크: [{ "label": "...", "url": "https://..." }] 최대 8개
   links jsonb not null default '[]'::jsonb check (jsonb_typeof(links) = 'array' and jsonb_array_length(links) <= 8),
   tags text[] not null default '{}' check (cardinality(tags) <= 8 and char_length(array_to_string(tags, ',')) <= 200),
+  name_en text check (name_en is null or char_length(name_en) <= 60),
+  summary_en text check (summary_en is null or char_length(summary_en) <= 200),
+  -- 사용법 단계: [{ "text": "...", "image": "<project_media 경로>" }] 최대 10개, 글 300자
+  howto jsonb not null default '[]'::jsonb check (jsonb_typeof(howto) = 'array' and jsonb_array_length(howto) <= 10),
+  -- 종류·분야별 추가 입력(data/schema/submission.json 이 정의). 키 이름·값 검증은 앱과 검사 서비스가 하고, DB 는 모양과 크기만 제한한다.
+  details jsonb not null default '{}'::jsonb check (jsonb_typeof(details) = 'object' and pg_column_size(details) <= 4096),
   -- 검사 대상이 바뀌었는지 비교하는 지문(주소+링크). 검사 서비스가 "내가 검사한 것"과 "지금 것"이 같은지 확인한다.
-  url_fingerprint text generated always as (md5(coalesce(url, '') || '|' || links::text)) stored,
+  url_fingerprint text generated always as (md5(coalesce(url, '') || '|' || links::text || '|' || coalesce(details->>'source_url', '') || '|' || coalesce(details->>'privacy_url', '') || '|' || coalesce(details->>'demo_video_url', ''))) stored,
   -- 화면에 보여 줄 검사 요약({result, date, items}). 검사 서비스 함수만 쓴다. 운영자 메모는 여기에 넣지 않는다.
   check_summary jsonb,
   published_at timestamptz,
@@ -181,7 +187,11 @@ begin
     new.check_summary := old.check_summary;
 
     -- 주소·링크를 바꾸면 재검사가 끝날 때까지 비공개(바꿔치기 방지). 공개·승인대기였던 작품만 해당.
-    if (new.url is distinct from old.url or new.links is distinct from old.links)
+    -- details 안의 소스·처방침·영상 주소도 같은 취급(생성 열 url_fingerprint 와 같은 대상).
+    if (new.url is distinct from old.url or new.links is distinct from old.links
+        or new.details->>'source_url' is distinct from old.details->>'source_url'
+        or new.details->>'privacy_url' is distinct from old.details->>'privacy_url'
+        or new.details->>'demo_video_url' is distinct from old.details->>'demo_video_url')
        and old.status in ('pending_review', 'published') then
       new.status := 'checking';
       new.check_summary := null;
@@ -227,7 +237,7 @@ begin
   end if;
   new.status := 'open';
   new.resolved_by := null; new.resolved_at := null; new.resolution_note := null;
-  new.snapshot := jsonb_build_object('name', p.name, 'url', p.url, 'links', p.links, 'owner_id', p.owner_id, 'reported_at', now());
+  new.snapshot := jsonb_build_object('name', p.name, 'url', p.url, 'links', p.links, 'source_url', p.details->>'source_url', 'owner_id', p.owner_id, 'reported_at', now());
   return new;
 end $$;
 
@@ -267,8 +277,501 @@ begin
   if p.id is null then raise exception '작품을 찾을 수 없습니다'; end if;
   if not public.is_active_user() then raise exception '정지된 계정입니다'; end if;
   if p.status not in ('draft', 'rejected') then raise exception '임시저장·반려 상태에서만 제출할 수 있습니다'; end if;
-  if p.url is null then raise exception '작품 주소가 필요합니다'; end if;
-  if p.type = 'extension' and not exists (select 1 from jsonb_array_elements(p.links) l where l ->> 'url' ~ '^https://github\.com/[^/]+/[^/]+/?$') then
+  -- 확장 프로그램은 스토어 등록 전일 수 있어 주소가 없어도 되지만, 소스 저장소는 필수.
+  if p.url is null and p.type <> 'extension' then raise exception '작품 주소가 필요합니다'; end if;
+  if p.type = 'extension'
+     and coalesce(p.details->>'source_url', '') !~ '^https://github\.com/[^/]+/[^/]+/?    raise exception '확장 프로그램은 소스가 있는 GitHub 저장소 주소가 필요합니다';
+  end if;
+  update public.projects set status = 'checking', check_summary = null where id = p_id;
+end $$;
+
+-- 검사 서비스(service_role)만. p_fingerprint 는 검사를 시작할 때의 url_fingerprint.
+-- 검사 중에 주소가 바뀌었으면 결과를 버린다(바꿔치기 방지).
+-- 통과 + 신뢰 계정 + 확장 프로그램 아님 => 바로 공개. 그 밖의 통과·경고 => 승인대기. 실패 => 반려.
+create function public.finish_check(p_id uuid, p_fingerprint text, p_result text, p_summary jsonb, p_detail jsonb default null)
+returns public.project_status
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  p public.projects;
+  owner_trusted boolean;
+  next_status public.project_status;
+begin
+  if p_result not in ('pass', 'warn', 'fail') then raise exception 'result 는 pass/warn/fail'; end if;
+  select * into p from public.projects where id = p_id for update;
+  if p.id is null or p.status <> 'checking' then raise exception '검사중인 작품이 아닙니다'; end if;
+  if p.url_fingerprint is distinct from p_fingerprint then raise exception '검사 중에 주소가 바뀌었습니다. 다시 검사해야 합니다'; end if;
+
+  select trusted into owner_trusted from public.profiles where id = p.owner_id;
+  next_status := case
+    when p_result = 'fail' then 'rejected'::public.project_status
+    when p_result = 'pass' and owner_trusted and p.type <> 'extension' then 'published'::public.project_status
+    else 'pending_review'::public.project_status
+  end;
+
+  update public.projects
+     set status = next_status, check_summary = p_summary,
+         published_at = case when next_status = 'published' then coalesce(published_at, now()) else null end
+   where id = p_id;
+  insert into public.project_reviews (project_id, check_detail) values (p_id, p_detail)
+  on conflict (project_id) do update set check_detail = excluded.check_detail, updated_at = now();
+  return next_status;
+end $$;
+
+-- 운영자: 승인대기 작품을 승인(공개) 또는 반려. 첫 승인이면 그 계정을 신뢰 계정으로.
+create function public.admin_review(p_id uuid, p_approve boolean, p_note text default null)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare p public.projects;
+begin
+  if not public.is_admin() then raise exception '운영자만 할 수 있습니다'; end if;
+  select * into p from public.projects where id = p_id for update;
+  if p.id is null or p.status <> 'pending_review' then raise exception '승인대기 작품이 아닙니다'; end if;
+  if p_approve then
+    update public.projects set status = 'published', published_at = coalesce(published_at, now()) where id = p_id;
+    update public.profiles set trusted = true where id = p.owner_id;
+  else
+    update public.projects set status = 'rejected', published_at = null where id = p_id;
+  end if;
+  insert into public.project_reviews (project_id, review_note, reviewer_id) values (p_id, p_note, (select auth.uid()))
+  on conflict (project_id) do update set review_note = excluded.review_note, reviewer_id = excluded.reviewer_id, updated_at = now();
+end $$;
+
+-- 운영자: 어떤 상태의 작품이든 즉시 비공개(악성 의심 등)
+create function public.admin_hide(p_id uuid, p_reason text) returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if not public.is_admin() then raise exception '운영자만 할 수 있습니다'; end if;
+  update public.projects set status = 'hidden', published_at = null where id = p_id;
+  insert into public.project_reviews (project_id, hidden_reason, reviewer_id) values (p_id, p_reason, (select auth.uid()))
+  on conflict (project_id) do update set hidden_reason = excluded.hidden_reason, reviewer_id = excluded.reviewer_id, updated_at = now();
+end $$;
+
+-- 운영자: 비공개 작품을 신고와 무관하게 되살린다(다시 검사부터)
+create function public.admin_restore(p_id uuid) returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if not public.is_admin() then raise exception '운영자만 할 수 있습니다'; end if;
+  if exists (select 1 from public.reports where project_id = p_id and status = 'open') then raise exception '열린 신고가 있어 먼저 신고를 처리해야 합니다'; end if;
+  update public.projects set status = 'checking', published_at = null where id = p_id and status = 'hidden';
+end $$;
+
+-- 운영자: 신고 처리. p_restore=true 면 비공개를 풀어 다시 검사(checking)로 보낸다(주소가 그사이 바뀌었을 수 있으므로 곧바로 공개하지 않는다).
+-- p_restore=false 면 반려. 열린 신고가 남아 있으면 상태를 바꾸지 않는다.
+create function public.admin_resolve_report(p_report_id uuid, p_restore boolean, p_note text default null) returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare r public.reports;
+begin
+  if not public.is_admin() then raise exception '운영자만 할 수 있습니다'; end if;
+  select * into r from public.reports where id = p_report_id for update;
+  if r.id is null or r.status <> 'open' then raise exception '열린 신고가 아닙니다'; end if;
+  update public.reports
+     set status = case when p_restore then 'dismissed'::public.report_status else 'resolved'::public.report_status end,
+         resolved_by = (select auth.uid()), resolved_at = now(), resolution_note = p_note
+   where id = p_report_id;
+  if r.project_id is not null
+     and not exists (select 1 from public.reports where project_id = r.project_id and status = 'open') then
+    update public.projects
+       set status = case when p_restore then 'checking'::public.project_status else 'rejected'::public.project_status end, published_at = null
+     where id = r.project_id and status = 'hidden';
+  end if;
+end $$;
+
+-- ============================================================
+-- 6. 권한: 기본 권한을 모두 걷고 필요한 것만 연다
+-- ============================================================
+-- Supabase 는 public 표에 anon·authenticated 권한을 기본으로 준다. RLS 가 마지막 방어선이 되도록
+-- 열 단위로 다시 연다. (service_role 은 RLS 를 우회하므로 서버에서만 쓴다.)
+alter default privileges for role postgres in schema public revoke all on tables from anon, authenticated;
+alter default privileges for role postgres in schema public revoke all on functions from public, anon, authenticated;
+revoke all on all tables in schema public from anon, authenticated;
+revoke all on all functions in schema public from public, anon, authenticated;
+
+-- 익명(anon): 공개 작품과 그 작성자·이미지의 공개 열만 읽는다
+grant select (id, display_name, bio, created_at) on public.profiles to anon, authenticated;
+grant select (id, owner_id, type, status, name, summary, description, category, url, links, tags, name_en, summary_en, howto, details, url_fingerprint, check_summary, published_at, created_at, updated_at)
+  on public.projects to anon, authenticated;
+grant select (id, project_id, owner_id, kind, storage_path, alt, width, height, sort) on public.project_media to anon, authenticated;
+
+-- 로그인 사용자: 쓸 수 있는 열만 연다. 상태·소유자·검사 결과·신뢰 여부·정지 여부 열은 없다.
+grant update (display_name, bio) on public.profiles to authenticated;
+grant insert (owner_id, type, name, summary, description, category, url, links, tags, name_en, summary_en, howto, details) on public.projects to authenticated;
+grant update (type, name, summary, description, category, url, links, tags, name_en, summary_en, howto, details) on public.projects to authenticated;
+grant delete on public.projects to authenticated;
+grant insert (project_id, owner_id, kind, storage_path, alt, bytes, width, height, sort) on public.project_media to authenticated;
+grant update (kind, alt, sort) on public.project_media to authenticated;
+grant delete on public.project_media to authenticated;
+grant select on public.project_reviews to authenticated;                  -- 정책이 본인 작품만 허용
+grant select on public.reports to authenticated;                          -- 정책이 본인 신고만 허용
+grant insert (project_id, reporter_id, reason, detail) on public.reports to authenticated;
+
+-- 함수: 사용자는 submit_project 만. 검사 서비스 함수는 service_role 만.
+grant execute on function public.submit_project(uuid) to authenticated;
+grant execute on function public.is_admin() to anon, authenticated;       -- 익명 조회 정책에서도 호출되므로 anon 도 필요(항상 false)
+grant execute on function public.admin_restore(uuid) to authenticated;
+grant execute on function public.admin_review(uuid, boolean, text) to authenticated;       -- 함수 안에서 is_admin() 재확인
+grant execute on function public.admin_hide(uuid, text) to authenticated;
+grant execute on function public.admin_resolve_report(uuid, boolean, text) to authenticated;
+grant execute on function public.finish_check(uuid, text, text, jsonb, jsonb) to service_role;
+-- RLS 정책 안에서 호출되는 도우미는 호출자 권한으로 실행되므로 실행 권한이 필요하다
+grant execute on function public.is_active_user() to authenticated;
+grant execute on function public.is_api_user() to anon, authenticated;
+
+-- ============================================================
+-- 7. RLS 켜기와 정책
+-- ============================================================
+alter table public.admins enable row level security;           -- 정책 없음 = API 로 접근 불가
+alter table public.profiles enable row level security;
+alter table public.projects enable row level security;
+alter table public.project_reviews enable row level security;
+alter table public.project_media enable row level security;
+alter table public.reports enable row level security;
+
+-- profiles: 본인, 공개 작품이 있는 사람, 운영자만 조회. 수정은 본인만(열 권한이 display_name, bio 로 제한).
+create policy profiles_select on public.profiles for select
+  using (
+    id = (select auth.uid())
+    or public.is_admin()
+    or exists (select 1 from public.projects p where p.owner_id = profiles.id and p.status = 'published')
+  );
+create policy profiles_update_own on public.profiles for update
+  using (id = (select auth.uid()) and public.is_active_user())
+  with check (id = (select auth.uid()));
+
+-- projects
+create policy projects_select_public on public.projects for select to anon, authenticated
+  using (status = 'published');
+create policy projects_select_own on public.projects for select to authenticated
+  using (owner_id = (select auth.uid()));
+create policy projects_select_admin on public.projects for select to authenticated
+  using (public.is_admin());
+create policy projects_insert_own on public.projects for insert to authenticated
+  with check (owner_id = (select auth.uid()) and public.is_active_user());
+-- 검사중·비공개(hidden) 작품은 본인도 수정 못 한다(검사 도중 바꿔치기 방지, 신고 증거 보존)
+create policy projects_update_own on public.projects for update to authenticated
+  using (owner_id = (select auth.uid()) and status not in ('checking', 'hidden') and public.is_active_user())
+  with check (owner_id = (select auth.uid()));
+create policy projects_delete_own on public.projects for delete to authenticated
+  using (owner_id = (select auth.uid()) and status <> 'hidden');
+
+-- project_reviews: 본인 작품의 반려 사유 등은 본인이, 전체는 운영자가 읽는다. 쓰기 정책 없음(함수만).
+create policy project_reviews_select on public.project_reviews for select to authenticated
+  using (
+    public.is_admin()
+    or exists (select 1 from public.projects p where p.id = project_reviews.project_id and p.owner_id = (select auth.uid()))
+  );
+
+-- project_media: 공개 작품의 이미지는 누구나, 그 밖에는 본인·운영자. 쓰기는 본인(검사중·비공개 제외).
+create policy project_media_select on public.project_media for select to anon, authenticated
+  using (
+    exists (select 1 from public.projects p where p.id = project_media.project_id and p.status = 'published')
+    or owner_id = (select auth.uid())
+    or public.is_admin()
+  );
+create policy project_media_insert_own on public.project_media for insert to authenticated
+  with check (
+    owner_id = (select auth.uid())
+    and exists (select 1 from public.projects p where p.id = project_id and p.owner_id = (select auth.uid()) and p.status not in ('checking', 'hidden'))
+  );
+create policy project_media_update_own on public.project_media for update to authenticated
+  using (owner_id = (select auth.uid())) with check (owner_id = (select auth.uid()));
+create policy project_media_delete_own on public.project_media for delete to authenticated
+  using (owner_id = (select auth.uid()));
+
+-- reports: 로그인한 사용자가 공개 작품만 신고. 읽기는 본인 신고와 운영자. 수정·삭제는 함수(운영자)만.
+create policy reports_insert_own on public.reports for insert to authenticated
+  with check (
+    reporter_id = (select auth.uid())
+    and public.is_active_user()
+    and exists (select 1 from public.projects p where p.id = project_id and p.status = 'published')
+  );
+create policy reports_select_own on public.reports for select to authenticated
+  using (reporter_id = (select auth.uid()) or public.is_admin());
+
+-- ============================================================
+-- 8. Storage: 작품 이미지 버킷
+-- ============================================================
+-- 이미지(WebP)만, 1MB 이하. 이 두 제한은 버킷 설정이라 정책보다 먼저 걸린다.
+-- 주의: allowed_mime_types 는 요청이 선언한 형식을 본다. 파일 내용(RIFF....WEBP)까지 보장하지는 않으므로
+--       운영 점검(docs/SECURITY.md '이미지')에서 정기적으로 매직바이트를 확인한다. SVG 는 허용 형식에 없다.
+-- 주의: public=true 는 주소를 아는 사람이 누구나 읽는다(경로가 추측 불가능한 uuid). 비공개로 돌린 작품의
+--       이미지 파일은 Storage API 로 지울 때까지 주소로 접근된다. 비공개 버킷+서명 주소 방식은 docs/SECURITY.md '결정 필요' 참고.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('project-images', 'project-images', true, 1048576, array['image/webp'])
+on conflict (id) do update
+  set public = excluded.public, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+-- 올리기: 경로가 <내 uid>/<내 작품 id>/<파일>.webp 일 때만, 검사중·비공개가 아닌 내 작품에만
+create policy "project-images insert own folder" on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'project-images'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+    and lower(name) like '%.webp'
+    and array_length(storage.foldername(name), 1) = 2
+    and exists (
+      select 1 from public.projects p
+      where p.id::text = (storage.foldername(name))[2] and p.owner_id = (select auth.uid()) and p.status not in ('checking', 'hidden')
+    )
+  );
+-- 목록·조회(API 경유): 본인 폴더와 운영자만. 공개 버킷의 주소 직접 접근은 이 정책과 무관하게 열려 있다.
+create policy "project-images select own or admin" on storage.objects for select to authenticated
+  using (bucket_id = 'project-images' and ((storage.foldername(name))[1] = (select auth.uid())::text or public.is_admin()));
+create policy "project-images update own folder" on storage.objects for update to authenticated
+  using (bucket_id = 'project-images' and (storage.foldername(name))[1] = (select auth.uid())::text)
+  with check (bucket_id = 'project-images' and (storage.foldername(name))[1] = (select auth.uid())::text and lower(name) like '%.webp');
+create policy "project-images delete own folder or admin" on storage.objects for delete to authenticated
+  using (bucket_id = 'project-images' and ((storage.foldername(name))[1] = (select auth.uid())::text or public.is_admin()));
+
+     and not exists (select 1 from jsonb_array_elements(p.links) l where l ->> 'url' ~ '^https://github\.com/[^/]+/[^/]+/?    raise exception '확장 프로그램은 소스가 있는 GitHub 저장소 주소가 필요합니다';
+  end if;
+  update public.projects set status = 'checking', check_summary = null where id = p_id;
+end $$;
+
+-- 검사 서비스(service_role)만. p_fingerprint 는 검사를 시작할 때의 url_fingerprint.
+-- 검사 중에 주소가 바뀌었으면 결과를 버린다(바꿔치기 방지).
+-- 통과 + 신뢰 계정 + 확장 프로그램 아님 => 바로 공개. 그 밖의 통과·경고 => 승인대기. 실패 => 반려.
+create function public.finish_check(p_id uuid, p_fingerprint text, p_result text, p_summary jsonb, p_detail jsonb default null)
+returns public.project_status
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  p public.projects;
+  owner_trusted boolean;
+  next_status public.project_status;
+begin
+  if p_result not in ('pass', 'warn', 'fail') then raise exception 'result 는 pass/warn/fail'; end if;
+  select * into p from public.projects where id = p_id for update;
+  if p.id is null or p.status <> 'checking' then raise exception '검사중인 작품이 아닙니다'; end if;
+  if p.url_fingerprint is distinct from p_fingerprint then raise exception '검사 중에 주소가 바뀌었습니다. 다시 검사해야 합니다'; end if;
+
+  select trusted into owner_trusted from public.profiles where id = p.owner_id;
+  next_status := case
+    when p_result = 'fail' then 'rejected'::public.project_status
+    when p_result = 'pass' and owner_trusted and p.type <> 'extension' then 'published'::public.project_status
+    else 'pending_review'::public.project_status
+  end;
+
+  update public.projects
+     set status = next_status, check_summary = p_summary,
+         published_at = case when next_status = 'published' then coalesce(published_at, now()) else null end
+   where id = p_id;
+  insert into public.project_reviews (project_id, check_detail) values (p_id, p_detail)
+  on conflict (project_id) do update set check_detail = excluded.check_detail, updated_at = now();
+  return next_status;
+end $$;
+
+-- 운영자: 승인대기 작품을 승인(공개) 또는 반려. 첫 승인이면 그 계정을 신뢰 계정으로.
+create function public.admin_review(p_id uuid, p_approve boolean, p_note text default null)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare p public.projects;
+begin
+  if not public.is_admin() then raise exception '운영자만 할 수 있습니다'; end if;
+  select * into p from public.projects where id = p_id for update;
+  if p.id is null or p.status <> 'pending_review' then raise exception '승인대기 작품이 아닙니다'; end if;
+  if p_approve then
+    update public.projects set status = 'published', published_at = coalesce(published_at, now()) where id = p_id;
+    update public.profiles set trusted = true where id = p.owner_id;
+  else
+    update public.projects set status = 'rejected', published_at = null where id = p_id;
+  end if;
+  insert into public.project_reviews (project_id, review_note, reviewer_id) values (p_id, p_note, (select auth.uid()))
+  on conflict (project_id) do update set review_note = excluded.review_note, reviewer_id = excluded.reviewer_id, updated_at = now();
+end $$;
+
+-- 운영자: 어떤 상태의 작품이든 즉시 비공개(악성 의심 등)
+create function public.admin_hide(p_id uuid, p_reason text) returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if not public.is_admin() then raise exception '운영자만 할 수 있습니다'; end if;
+  update public.projects set status = 'hidden', published_at = null where id = p_id;
+  insert into public.project_reviews (project_id, hidden_reason, reviewer_id) values (p_id, p_reason, (select auth.uid()))
+  on conflict (project_id) do update set hidden_reason = excluded.hidden_reason, reviewer_id = excluded.reviewer_id, updated_at = now();
+end $$;
+
+-- 운영자: 비공개 작품을 신고와 무관하게 되살린다(다시 검사부터)
+create function public.admin_restore(p_id uuid) returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if not public.is_admin() then raise exception '운영자만 할 수 있습니다'; end if;
+  if exists (select 1 from public.reports where project_id = p_id and status = 'open') then raise exception '열린 신고가 있어 먼저 신고를 처리해야 합니다'; end if;
+  update public.projects set status = 'checking', published_at = null where id = p_id and status = 'hidden';
+end $$;
+
+-- 운영자: 신고 처리. p_restore=true 면 비공개를 풀어 다시 검사(checking)로 보낸다(주소가 그사이 바뀌었을 수 있으므로 곧바로 공개하지 않는다).
+-- p_restore=false 면 반려. 열린 신고가 남아 있으면 상태를 바꾸지 않는다.
+create function public.admin_resolve_report(p_report_id uuid, p_restore boolean, p_note text default null) returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare r public.reports;
+begin
+  if not public.is_admin() then raise exception '운영자만 할 수 있습니다'; end if;
+  select * into r from public.reports where id = p_report_id for update;
+  if r.id is null or r.status <> 'open' then raise exception '열린 신고가 아닙니다'; end if;
+  update public.reports
+     set status = case when p_restore then 'dismissed'::public.report_status else 'resolved'::public.report_status end,
+         resolved_by = (select auth.uid()), resolved_at = now(), resolution_note = p_note
+   where id = p_report_id;
+  if r.project_id is not null
+     and not exists (select 1 from public.reports where project_id = r.project_id and status = 'open') then
+    update public.projects
+       set status = case when p_restore then 'checking'::public.project_status else 'rejected'::public.project_status end, published_at = null
+     where id = r.project_id and status = 'hidden';
+  end if;
+end $$;
+
+-- ============================================================
+-- 6. 권한: 기본 권한을 모두 걷고 필요한 것만 연다
+-- ============================================================
+-- Supabase 는 public 표에 anon·authenticated 권한을 기본으로 준다. RLS 가 마지막 방어선이 되도록
+-- 열 단위로 다시 연다. (service_role 은 RLS 를 우회하므로 서버에서만 쓴다.)
+alter default privileges for role postgres in schema public revoke all on tables from anon, authenticated;
+alter default privileges for role postgres in schema public revoke all on functions from public, anon, authenticated;
+revoke all on all tables in schema public from anon, authenticated;
+revoke all on all functions in schema public from public, anon, authenticated;
+
+-- 익명(anon): 공개 작품과 그 작성자·이미지의 공개 열만 읽는다
+grant select (id, display_name, bio, created_at) on public.profiles to anon, authenticated;
+grant select (id, owner_id, type, status, name, summary, description, category, url, links, tags, name_en, summary_en, howto, details, url_fingerprint, check_summary, published_at, created_at, updated_at)
+  on public.projects to anon, authenticated;
+grant select (id, project_id, owner_id, kind, storage_path, alt, width, height, sort) on public.project_media to anon, authenticated;
+
+-- 로그인 사용자: 쓸 수 있는 열만 연다. 상태·소유자·검사 결과·신뢰 여부·정지 여부 열은 없다.
+grant update (display_name, bio) on public.profiles to authenticated;
+grant insert (owner_id, type, name, summary, description, category, url, links, tags, name_en, summary_en, howto, details) on public.projects to authenticated;
+grant update (type, name, summary, description, category, url, links, tags, name_en, summary_en, howto, details) on public.projects to authenticated;
+grant delete on public.projects to authenticated;
+grant insert (project_id, owner_id, kind, storage_path, alt, bytes, width, height, sort) on public.project_media to authenticated;
+grant update (kind, alt, sort) on public.project_media to authenticated;
+grant delete on public.project_media to authenticated;
+grant select on public.project_reviews to authenticated;                  -- 정책이 본인 작품만 허용
+grant select on public.reports to authenticated;                          -- 정책이 본인 신고만 허용
+grant insert (project_id, reporter_id, reason, detail) on public.reports to authenticated;
+
+-- 함수: 사용자는 submit_project 만. 검사 서비스 함수는 service_role 만.
+grant execute on function public.submit_project(uuid) to authenticated;
+grant execute on function public.is_admin() to anon, authenticated;       -- 익명 조회 정책에서도 호출되므로 anon 도 필요(항상 false)
+grant execute on function public.admin_restore(uuid) to authenticated;
+grant execute on function public.admin_review(uuid, boolean, text) to authenticated;       -- 함수 안에서 is_admin() 재확인
+grant execute on function public.admin_hide(uuid, text) to authenticated;
+grant execute on function public.admin_resolve_report(uuid, boolean, text) to authenticated;
+grant execute on function public.finish_check(uuid, text, text, jsonb, jsonb) to service_role;
+-- RLS 정책 안에서 호출되는 도우미는 호출자 권한으로 실행되므로 실행 권한이 필요하다
+grant execute on function public.is_active_user() to authenticated;
+grant execute on function public.is_api_user() to anon, authenticated;
+
+-- ============================================================
+-- 7. RLS 켜기와 정책
+-- ============================================================
+alter table public.admins enable row level security;           -- 정책 없음 = API 로 접근 불가
+alter table public.profiles enable row level security;
+alter table public.projects enable row level security;
+alter table public.project_reviews enable row level security;
+alter table public.project_media enable row level security;
+alter table public.reports enable row level security;
+
+-- profiles: 본인, 공개 작품이 있는 사람, 운영자만 조회. 수정은 본인만(열 권한이 display_name, bio 로 제한).
+create policy profiles_select on public.profiles for select
+  using (
+    id = (select auth.uid())
+    or public.is_admin()
+    or exists (select 1 from public.projects p where p.owner_id = profiles.id and p.status = 'published')
+  );
+create policy profiles_update_own on public.profiles for update
+  using (id = (select auth.uid()) and public.is_active_user())
+  with check (id = (select auth.uid()));
+
+-- projects
+create policy projects_select_public on public.projects for select to anon, authenticated
+  using (status = 'published');
+create policy projects_select_own on public.projects for select to authenticated
+  using (owner_id = (select auth.uid()));
+create policy projects_select_admin on public.projects for select to authenticated
+  using (public.is_admin());
+create policy projects_insert_own on public.projects for insert to authenticated
+  with check (owner_id = (select auth.uid()) and public.is_active_user());
+-- 검사중·비공개(hidden) 작품은 본인도 수정 못 한다(검사 도중 바꿔치기 방지, 신고 증거 보존)
+create policy projects_update_own on public.projects for update to authenticated
+  using (owner_id = (select auth.uid()) and status not in ('checking', 'hidden') and public.is_active_user())
+  with check (owner_id = (select auth.uid()));
+create policy projects_delete_own on public.projects for delete to authenticated
+  using (owner_id = (select auth.uid()) and status <> 'hidden');
+
+-- project_reviews: 본인 작품의 반려 사유 등은 본인이, 전체는 운영자가 읽는다. 쓰기 정책 없음(함수만).
+create policy project_reviews_select on public.project_reviews for select to authenticated
+  using (
+    public.is_admin()
+    or exists (select 1 from public.projects p where p.id = project_reviews.project_id and p.owner_id = (select auth.uid()))
+  );
+
+-- project_media: 공개 작품의 이미지는 누구나, 그 밖에는 본인·운영자. 쓰기는 본인(검사중·비공개 제외).
+create policy project_media_select on public.project_media for select to anon, authenticated
+  using (
+    exists (select 1 from public.projects p where p.id = project_media.project_id and p.status = 'published')
+    or owner_id = (select auth.uid())
+    or public.is_admin()
+  );
+create policy project_media_insert_own on public.project_media for insert to authenticated
+  with check (
+    owner_id = (select auth.uid())
+    and exists (select 1 from public.projects p where p.id = project_id and p.owner_id = (select auth.uid()) and p.status not in ('checking', 'hidden'))
+  );
+create policy project_media_update_own on public.project_media for update to authenticated
+  using (owner_id = (select auth.uid())) with check (owner_id = (select auth.uid()));
+create policy project_media_delete_own on public.project_media for delete to authenticated
+  using (owner_id = (select auth.uid()));
+
+-- reports: 로그인한 사용자가 공개 작품만 신고. 읽기는 본인 신고와 운영자. 수정·삭제는 함수(운영자)만.
+create policy reports_insert_own on public.reports for insert to authenticated
+  with check (
+    reporter_id = (select auth.uid())
+    and public.is_active_user()
+    and exists (select 1 from public.projects p where p.id = project_id and p.status = 'published')
+  );
+create policy reports_select_own on public.reports for select to authenticated
+  using (reporter_id = (select auth.uid()) or public.is_admin());
+
+-- ============================================================
+-- 8. Storage: 작품 이미지 버킷
+-- ============================================================
+-- 이미지(WebP)만, 1MB 이하. 이 두 제한은 버킷 설정이라 정책보다 먼저 걸린다.
+-- 주의: allowed_mime_types 는 요청이 선언한 형식을 본다. 파일 내용(RIFF....WEBP)까지 보장하지는 않으므로
+--       운영 점검(docs/SECURITY.md '이미지')에서 정기적으로 매직바이트를 확인한다. SVG 는 허용 형식에 없다.
+-- 주의: public=true 는 주소를 아는 사람이 누구나 읽는다(경로가 추측 불가능한 uuid). 비공개로 돌린 작품의
+--       이미지 파일은 Storage API 로 지울 때까지 주소로 접근된다. 비공개 버킷+서명 주소 방식은 docs/SECURITY.md '결정 필요' 참고.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('project-images', 'project-images', true, 1048576, array['image/webp'])
+on conflict (id) do update
+  set public = excluded.public, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+-- 올리기: 경로가 <내 uid>/<내 작품 id>/<파일>.webp 일 때만, 검사중·비공개가 아닌 내 작품에만
+create policy "project-images insert own folder" on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'project-images'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+    and lower(name) like '%.webp'
+    and array_length(storage.foldername(name), 1) = 2
+    and exists (
+      select 1 from public.projects p
+      where p.id::text = (storage.foldername(name))[2] and p.owner_id = (select auth.uid()) and p.status not in ('checking', 'hidden')
+    )
+  );
+-- 목록·조회(API 경유): 본인 폴더와 운영자만. 공개 버킷의 주소 직접 접근은 이 정책과 무관하게 열려 있다.
+create policy "project-images select own or admin" on storage.objects for select to authenticated
+  using (bucket_id = 'project-images' and ((storage.foldername(name))[1] = (select auth.uid())::text or public.is_admin()));
+create policy "project-images update own folder" on storage.objects for update to authenticated
+  using (bucket_id = 'project-images' and (storage.foldername(name))[1] = (select auth.uid())::text)
+  with check (bucket_id = 'project-images' and (storage.foldername(name))[1] = (select auth.uid())::text and lower(name) like '%.webp');
+create policy "project-images delete own folder or admin" on storage.objects for delete to authenticated
+  using (bucket_id = 'project-images' and ((storage.foldername(name))[1] = (select auth.uid())::text or public.is_admin()));
+) then
     raise exception '확장 프로그램은 소스가 있는 GitHub 저장소 주소가 필요합니다';
   end if;
   update public.projects set status = 'checking', check_summary = null where id = p_id;
@@ -382,14 +885,14 @@ revoke all on all functions in schema public from public, anon, authenticated;
 
 -- 익명(anon): 공개 작품과 그 작성자·이미지의 공개 열만 읽는다
 grant select (id, display_name, bio, created_at) on public.profiles to anon, authenticated;
-grant select (id, owner_id, type, status, name, summary, description, category, url, links, tags, url_fingerprint, check_summary, published_at, created_at, updated_at)
+grant select (id, owner_id, type, status, name, summary, description, category, url, links, tags, name_en, summary_en, howto, details, url_fingerprint, check_summary, published_at, created_at, updated_at)
   on public.projects to anon, authenticated;
 grant select (id, project_id, owner_id, kind, storage_path, alt, width, height, sort) on public.project_media to anon, authenticated;
 
 -- 로그인 사용자: 쓸 수 있는 열만 연다. 상태·소유자·검사 결과·신뢰 여부·정지 여부 열은 없다.
 grant update (display_name, bio) on public.profiles to authenticated;
-grant insert (owner_id, type, name, summary, description, category, url, links, tags) on public.projects to authenticated;
-grant update (type, name, summary, description, category, url, links, tags) on public.projects to authenticated;
+grant insert (owner_id, type, name, summary, description, category, url, links, tags, name_en, summary_en, howto, details) on public.projects to authenticated;
+grant update (type, name, summary, description, category, url, links, tags, name_en, summary_en, howto, details) on public.projects to authenticated;
 grant delete on public.projects to authenticated;
 grant insert (project_id, owner_id, kind, storage_path, alt, bytes, width, height, sort) on public.project_media to authenticated;
 grant update (kind, alt, sort) on public.project_media to authenticated;
