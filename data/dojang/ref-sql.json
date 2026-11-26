@@ -1,0 +1,33 @@
+{
+  "slug": "sql",
+  "title": "SQL·DB 도감",
+  "description": "'조건에 맞는 것만 가져오기', '두 표 합치기', '왜 느리지?' 같은 상황으로 찾는 SQL 과 데이터베이스 기본기.",
+  "intro": "예시는 users(id, name, email, created_at), orders(id, user_id, amount, created_at) 두 표를 기준으로 합니다. 문법은 PostgreSQL·MySQL 에서 거의 같고, 다른 부분은 '참고'에 적었습니다. UPDATE·DELETE 는 되돌리기 어려우니 '주의'를 읽으세요.",
+  "sections": [
+    { "name": "가져오기", "items": [
+      { "term": "조건에 맞는 행만 가져오고 싶어요", "short": "WHERE 로 거릅니다.", "example": "SELECT id, name FROM users\nWHERE created_at >= '2026-01-01'\nORDER BY created_at DESC\nLIMIT 20;", "detail": "SELECT * 는 편하지만 필요한 열만 적는 것이 빠르고 안전합니다. LIMIT 없이 큰 표를 조회하면 서버가 느려질 수 있습니다." },
+      { "term": "여러 개 중 하나인지, 비슷한 글자인지 찾고 싶어요", "short": "IN, LIKE 를 씁니다.", "example": "SELECT * FROM users WHERE id IN (1, 2, 3);\nSELECT * FROM users WHERE email LIKE '%@gmail.com';", "detail": "LIKE '%글자' 처럼 앞에 %가 붙으면 인덱스를 못 타서 느립니다." },
+      { "term": "NULL 은 왜 = 로 안 찾아지죠", "short": "NULL 은 '값 없음'이라 IS NULL 로 비교합니다.", "example": "SELECT * FROM users WHERE deleted_at IS NULL;", "detail": "WHERE x = NULL 은 항상 거짓입니다. NULL 과 비교하면 결과도 NULL 이 되는 규칙 때문입니다." }
+    ]},
+    { "name": "집계", "items": [
+      { "term": "개수·합계·평균을 구하고 싶어요", "short": "COUNT, SUM, AVG 를 씁니다.", "example": "SELECT COUNT(*) FROM users;\nSELECT SUM(amount) FROM orders;", "detail": "COUNT(*) 은 행 수, COUNT(열) 은 그 열이 NULL 이 아닌 행 수입니다." },
+      { "term": "사용자별 주문 합계처럼 묶어서 보고 싶어요", "short": "GROUP BY 로 묶습니다.", "example": "SELECT user_id, SUM(amount) AS total\nFROM orders\nGROUP BY user_id\nHAVING SUM(amount) > 100000;", "detail": "집계 결과에 조건을 걸 때는 WHERE 가 아니라 HAVING 입니다. WHERE 는 묶기 전, HAVING 은 묶은 후입니다." }
+    ]},
+    { "name": "표 합치기", "items": [
+      { "term": "두 표를 합쳐서 보고 싶어요", "short": "JOIN 으로 키를 맞춥니다.", "example": "SELECT u.name, o.amount\nFROM orders o\nJOIN users u ON u.id = o.user_id;", "detail": "JOIN(INNER)은 양쪽에 모두 있는 행만 나옵니다." },
+      { "term": "주문이 없는 사용자도 같이 보고 싶어요", "short": "LEFT JOIN 을 씁니다.", "example": "SELECT u.name, o.id\nFROM users u\nLEFT JOIN orders o ON o.user_id = u.id\nWHERE o.id IS NULL;", "detail": "왼쪽 표는 전부 나오고 짝이 없으면 오른쪽 열이 NULL 입니다. 위 예시는 '주문이 한 번도 없는 사용자'를 찾는 패턴입니다." },
+      { "term": "JOIN 했더니 행이 불어났어요", "short": "1:N 관계에서 한쪽 행이 여러 번 나온 것입니다.", "detail": "사용자 1명이 주문 3건이면 JOIN 결과는 3행입니다. 합계를 구할 때 중복 집계가 일어나지 않는지 GROUP BY 단위를 확인하세요." }
+    ]},
+    { "name": "바꾸기", "items": [
+      { "term": "데이터를 넣고 싶어요", "short": "INSERT 를 씁니다.", "example": "INSERT INTO users (name, email) VALUES ('민수', 'a@example.com');", "detail": "열 이름을 적어 두면 표 구조가 바뀌어도 덜 깨집니다." },
+      { "term": "데이터를 수정·삭제하고 싶어요", "short": "UPDATE, DELETE 는 반드시 WHERE 와 함께.", "example": "UPDATE users SET name = '민수2' WHERE id = 1;\nDELETE FROM orders WHERE id = 10;", "detail": "주의: WHERE 를 빼면 표 전체가 바뀌거나 지워집니다. 먼저 같은 WHERE 로 SELECT 해서 대상을 확인하고, 중요한 작업은 트랜잭션 안에서 합니다." },
+      { "term": "여러 작업을 전부 성공하거나 전부 취소하고 싶어요", "short": "트랜잭션으로 묶습니다.", "example": "BEGIN;\nUPDATE accounts SET balance = balance - 1000 WHERE id = 1;\nUPDATE accounts SET balance = balance + 1000 WHERE id = 2;\nCOMMIT;", "detail": "중간에 오류가 나면 ROLLBACK 으로 되돌립니다. 이체·재고·결제처럼 '반만 되면 안 되는' 작업에 씁니다." }
+    ]},
+    { "name": "설계와 속도", "items": [
+      { "term": "기본키와 외래키가 뭔가요", "short": "기본키는 행의 고유 번호, 외래키는 다른 표를 가리키는 번호입니다.", "example": "CREATE TABLE orders (\n  id BIGINT PRIMARY KEY,\n  user_id BIGINT NOT NULL REFERENCES users(id)\n);", "detail": "외래키를 걸면 존재하지 않는 사용자의 주문이 들어가는 것을 DB 가 막아 줍니다." },
+      { "term": "조회가 느려요", "short": "인덱스가 있는지, 쿼리가 인덱스를 타는지 봅니다.", "example": "CREATE INDEX idx_orders_user ON orders(user_id);\nEXPLAIN SELECT * FROM orders WHERE user_id = 1;", "detail": "WHERE·JOIN·ORDER BY 에 자주 쓰는 열에 인덱스를 만듭니다. 인덱스가 많으면 쓰기가 느려지므로 무조건 늘리지 않습니다. EXPLAIN 으로 실제 계획을 봅니다." },
+      { "term": "N+1 문제가 뭔가요", "short": "목록 1번 조회 뒤 항목마다 쿼리를 또 보내는 패턴입니다.", "detail": "주문 100건을 가져온 뒤 각 주문의 사용자를 100번 따로 조회하면 쿼리가 101번입니다. JOIN 이나 ORM 의 eager loading(include, prefetch)으로 한 번에 가져옵니다." },
+      { "term": "삭제할 때 정말 지워야 하나요", "short": "복구가 필요하면 '삭제 표시'(soft delete)를 둡니다.", "example": "UPDATE users SET deleted_at = NOW() WHERE id = 1;", "detail": "대신 모든 조회에 deleted_at IS NULL 조건을 붙여야 합니다. 개인정보는 법·정책에 따라 실제로 지워야 할 수 있으니 서비스 성격에 맞게 정합니다." }
+    ]}
+  ]
+}

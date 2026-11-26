@@ -1,0 +1,32 @@
+{
+  "slug": "browser-errors",
+  "title": "브라우저 오류 읽기 도감",
+  "description": "CORS, 404, Uncaught TypeError, 하얀 화면 등 개발자 도구에서 마주치는 오류를 읽는 법과 원인 순서.",
+  "intro": "개발자 도구(F12)의 Console 과 Network 탭이 출발점입니다. 오류 메시지는 영어 그대로 검색하면 답을 찾기 쉽습니다. 메시지 전체를 복사해 붙이면 대부분의 도움을 받을 수 있습니다.",
+  "sections": [
+    { "name": "도구 쓰는 법", "items": [
+      { "term": "화면이 하얗게 나와요", "short": "Console 탭의 빨간 오류를 먼저 봅니다.", "detail": "대부분 자바스크립트 오류로 렌더링이 멈춘 경우입니다. 맨 위 오류 한 줄과 그 오른쪽의 파일:줄 번호를 클릭하면 코드 위치로 갑니다." },
+      { "term": "요청이 실패한 이유를 보고 싶어요", "short": "Network 탭에서 빨간 요청을 클릭합니다.", "detail": "Headers 에서 주소·메서드·상태 코드를, Payload 에서 보낸 값을, Response 에서 서버가 돌려준 값을 봅니다. 주소가 의도와 다르게 만들어진 경우가 많습니다." },
+      { "term": "수정했는데 예전 화면이 나와요", "short": "캐시를 비우고 강력 새로고침합니다.", "detail": "Ctrl+Shift+R 또는 개발자 도구를 연 채 새로고침 버튼 우클릭 > '캐시 비우기 및 강력 새로고침'. Network 탭의 'Disable cache' 를 켜 두면 개발 중에 편합니다." }
+    ]},
+    { "name": "네트워크 오류", "items": [
+      { "term": "CORS policy 오류가 나요", "short": "서버가 '이 출처의 요청을 허용한다'고 응답하지 않았습니다.", "example": "Access to fetch at 'https://api.x.com' from origin 'http://localhost:3000' has been blocked by CORS policy", "detail": "브라우저 규칙이라 서버(응답 헤더)에서 고쳐야 합니다. Access-Control-Allow-Origin 에 내 프런트 주소를 넣습니다. 프런트에서 mode:'no-cors' 로 우회하면 응답을 읽을 수 없으니 해결이 아닙니다. 개발 중에는 프록시(Vite·Next 의 rewrites)를 쓰는 방법이 깔끔합니다." },
+      { "term": "OPTIONS 요청이 먼저 가고 실패해요", "short": "preflight 라는 사전 확인입니다.", "detail": "JSON 본문이나 Authorization 헤더를 보내면 브라우저가 본 요청 전에 OPTIONS 로 허용 여부를 묻습니다. 서버가 OPTIONS 에 200/204 와 Allow-Methods·Allow-Headers 를 응답해야 합니다." },
+      { "term": "Failed to fetch / Network Error", "short": "서버에 닿지 못했습니다.", "detail": "원인 순서: 서버가 꺼짐 → 주소·포트 오타 → https 페이지에서 http 호출(mixed content) → CORS 로 막힘 → 오프라인. Network 탭에서 상태 코드가 없으면 닿지 못한 것입니다." },
+      { "term": "401 과 403 의 차이", "short": "401 은 로그인 안 됨, 403 은 로그인했지만 권한 없음.", "detail": "401 이면 토큰이 없거나 만료됐는지, 403 이면 계정 권한·CORS·IP 제한을 봅니다. 상태 코드 전체는 'HTTP 도감'에 있습니다." },
+      { "term": "404 인데 주소는 맞는 것 같아요", "short": "슬래시·대소문자·배포 경로를 확인합니다.", "detail": "SPA 를 새로고침하면 404 가 나는 것은 서버가 모든 경로를 index.html 로 돌려주지 않아서입니다. 정적 호스팅의 rewrites/redirects 설정을 확인합니다. 하위 경로에 배포했다면 base 경로 설정도 봅니다." }
+    ]},
+    { "name": "자바스크립트 오류", "items": [
+      { "term": "Cannot read properties of undefined (reading 'x')", "short": "undefined 인 값의 속성을 읽으려 했습니다.", "example": "const name = user?.profile?.name ?? '이름 없음';", "detail": "API 응답이 오기 전에 화면이 먼저 그려졌거나, 응답 구조가 예상과 다른 경우가 많습니다. console.log 로 그 값이 실제로 무엇인지 먼저 확인하고, 옵셔널 체이닝(?.)은 그 다음입니다." },
+      { "term": "x is not a function", "short": "함수가 아닌 값을 호출했습니다.", "detail": "import 를 { } 로 해야 하는데 default 로 했거나(또는 반대), 배열 메서드를 객체에 썼거나, 철자가 틀린 경우입니다. console.log(typeof x) 로 실제 타입을 봅니다." },
+      { "term": "Unexpected token '<' in JSON", "short": "JSON 을 기대했는데 HTML 이 왔습니다.", "detail": "API 주소가 틀려 404/500 HTML 페이지가 온 경우가 대부분입니다. Network 탭의 Response 를 열어 실제로 받은 내용을 봅니다." },
+      { "term": "Uncaught (in promise)", "short": "await/then 의 실패를 아무도 처리하지 않았습니다.", "example": "try {\n  const res = await fetch(url);\n  if (!res.ok) throw new Error(res.status);\n} catch (e) {\n  console.error(e);\n}", "detail": "fetch 는 404·500 에서도 reject 하지 않습니다. res.ok 를 직접 확인해야 합니다." },
+      { "term": "화면이 값이 바뀌어도 안 바뀌어요", "short": "상태가 아니라 일반 변수를 바꿨거나, 객체를 직접 수정했습니다.", "detail": "React 는 setState 로, 배열·객체는 복사본을 만들어 교체해야 다시 그립니다. 의존성 배열에 빠진 값이 있어도 오래된 값을 씁니다(stale closure)." }
+    ]},
+    { "name": "렌더링·스타일", "items": [
+      { "term": "스타일이 적용되지 않아요", "short": "선택자가 닿는지, 더 센 규칙에 덮였는지 봅니다.", "detail": "Elements 탭에서 요소를 고르고 Styles 에서 취소선이 그어진 규칙을 확인합니다. 파일 경로 오타나 캐시도 흔한 원인입니다." },
+      { "term": "모바일에서 가로 스크롤이 생겨요", "short": "화면보다 넓은 요소가 있습니다.", "example": "* { outline: 1px solid red; }", "detail": "임시로 위 규칙을 넣어 어느 요소가 넘치는지 찾습니다. 고정 px 너비, 긴 영문·URL(overflow-wrap), 100vw 사용이 흔한 원인입니다." },
+      { "term": "Hydration failed / 서버와 클라이언트 HTML 불일치", "short": "서버가 그린 HTML 과 브라우저가 처음 그린 결과가 달랐습니다.", "detail": "렌더 중에 Date.now(), Math.random(), localStorage, window 크기를 쓰면 생깁니다. 그런 값은 useEffect 안에서 읽습니다." }
+    ]}
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "slug": "terminal",
+  "title": "터미널 명령 도감",
+  "description": "'파일이 어디 있지?', '이 프로그램이 왜 안 꺼지지?' 같은 상황으로 찾는 터미널(Bash) 명령 모음.",
+  "intro": "명령 이름이 아니라 겪는 상황으로 찾도록 정리했습니다. Windows PowerShell 은 이름이 다른 경우가 있어 '참고'에 적었습니다. rm 처럼 지우는 명령은 되돌릴 수 없으니 '주의'를 읽으세요.",
+  "sections": [
+    { "name": "둘러보기", "items": [
+      { "term": "지금 내가 어느 폴더에 있는지 모르겠어요", "short": "현재 경로를 출력합니다.", "example": "pwd", "detail": "참고: PowerShell 은 pwd 도 되고 Get-Location 도 됩니다." },
+      { "term": "폴더 안에 뭐가 있는지 보고 싶어요", "short": "파일 목록을 자세히, 숨김 파일까지 봅니다.", "example": "ls -la", "detail": ".env, .gitignore 처럼 점으로 시작하는 파일은 -a 를 줘야 보입니다." },
+      { "term": "다른 폴더로 가고 싶어요", "short": "cd 로 이동합니다.", "example": "cd 프로젝트폴더\ncd ..\ncd ~", "detail": ".. 은 한 단계 위, ~ 는 홈 폴더입니다. 경로에 띄어쓰기가 있으면 따옴표로 감쌉니다." },
+      { "term": "파일 내용을 터미널에서 훑어보고 싶어요", "short": "앞부분·뒷부분·전체를 봅니다.", "example": "head -n 20 파일\ntail -n 50 파일\ncat 파일", "detail": "로그는 tail -f 로 열어 두면 새로 쌓이는 줄이 계속 보입니다. 끄려면 Ctrl+C." }
+    ]},
+    { "name": "찾기", "items": [
+      { "term": "파일 이름으로 찾고 싶어요", "short": "폴더 아래를 뒤져 이름이 맞는 파일을 찾습니다.", "example": "find . -name \"*.json\" -not -path \"./node_modules/*\"", "detail": "node_modules 를 빼지 않으면 결과가 수천 줄이 됩니다." },
+      { "term": "코드 안에서 어떤 글자가 쓰인 곳을 찾고 싶어요", "short": "파일 내용에서 글자를 검색합니다.", "example": "grep -rn \"API_URL\" src/", "detail": "-r 은 하위 폴더까지, -n 은 줄 번호. 더 빠른 도구로 ripgrep(rg) 가 있습니다." },
+      { "term": "방금 쓴 명령을 다시 찾고 싶어요", "short": "히스토리를 검색합니다.", "example": "history | grep docker", "detail": "Ctrl+R 을 누르고 글자를 치면 과거 명령을 바로 검색할 수 있습니다." }
+    ]},
+    { "name": "다루기", "items": [
+      { "term": "폴더와 파일을 만들고 싶어요", "short": "mkdir 과 touch 를 씁니다.", "example": "mkdir -p src/components\ntouch README.md", "detail": "-p 를 주면 중간 폴더가 없어도 한 번에 만듭니다." },
+      { "term": "복사·이동·이름 바꾸기", "short": "cp, mv 를 씁니다.", "example": "cp -r 원본폴더 복사본\nmv 이전이름 새이름", "detail": "mv 는 이름 바꾸기와 이동이 같은 명령입니다. 같은 이름이 있으면 덮어씁니다." },
+      { "term": "파일을 지우고 싶어요", "short": "rm 으로 지웁니다.", "example": "rm 파일\nrm -r 폴더", "detail": "주의: 휴지통으로 가지 않고 바로 사라집니다. rm -rf 뒤의 경로를 한 번 더 확인하세요. 변수가 비어 있으면 엉뚱한 곳을 지울 수 있습니다." },
+      { "term": "명령 결과를 파일로 저장하고 싶어요", "short": "리다이렉션(>, >>)을 씁니다.", "example": "npm test > result.txt\necho \"추가\" >> log.txt", "detail": "> 는 덮어쓰기, >> 는 이어붙이기입니다. 에러까지 저장하려면 2>&1 을 붙입니다." }
+    ]},
+    { "name": "프로세스·포트", "items": [
+      { "term": "실행 중인 프로그램을 멈추고 싶어요", "short": "Ctrl+C 로 중단합니다.", "detail": "그래도 안 끝나면 다른 터미널에서 프로세스 ID 를 찾아 kill 합니다." },
+      { "term": "'포트가 이미 사용 중'이라고 나와요", "short": "그 포트를 쓰는 프로세스를 찾아 종료합니다.", "example": "lsof -i :3000\nkill 프로세스번호", "detail": "참고: Windows 는 netstat -ano | findstr :3000 으로 PID 를 찾고 taskkill /PID 번호 /F 로 끕니다. 이전에 켜 둔 개발 서버가 남아 있는 경우가 대부분입니다." },
+      { "term": "서버를 터미널을 닫아도 계속 돌리고 싶어요", "short": "백그라운드로 실행합니다.", "example": "nohup node server.js > out.log 2>&1 &", "detail": "실서비스에서는 pm2, systemd, Docker 같은 프로세스 관리 도구를 씁니다." }
+    ]},
+    { "name": "권한·환경", "items": [
+      { "term": "'Permission denied' 가 나와요", "short": "파일 권한이나 실행 권한이 없습니다.", "example": "ls -l 파일\nchmod +x 스크립트.sh", "detail": "sudo 를 먼저 붙이기 전에 왜 권한이 없는지 봅니다. 남의 소유 파일이거나 실행 비트가 빠진 경우가 흔합니다." },
+      { "term": "'command not found' 가 나와요", "short": "프로그램이 설치되지 않았거나 PATH 에 없습니다.", "example": "which node\necho $PATH", "detail": "설치 직후라면 터미널을 새로 열어야 PATH 가 반영됩니다." },
+      { "term": "환경 변수를 잠깐 설정하고 실행하고 싶어요", "short": "명령 앞에 변수를 붙입니다.", "example": "PORT=4000 node server.js", "detail": "참고: PowerShell 은 $env:PORT=\"4000\"; node server.js 처럼 씁니다." }
+    ]},
+    { "name": "네트워크 확인", "items": [
+      { "term": "API 가 응답하는지 터미널에서 확인하고 싶어요", "short": "curl 로 요청을 보냅니다.", "example": "curl -i https://example.com/api/health\ncurl -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"a\"}' URL", "detail": "-i 는 응답 헤더까지 보여 줍니다. 브라우저에서 안 되는데 curl 은 된다면 CORS 같은 브라우저 규칙 문제일 가능성이 큽니다." },
+      { "term": "JSON 응답을 읽기 좋게 보고 싶어요", "short": "jq 로 정리합니다.", "example": "curl -s URL | jq '.data[0]'", "detail": "jq 가 없다면 node -e 나 브라우저 개발자 도구의 Network 탭 Preview 로도 볼 수 있습니다." }
+    ]}
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "slug": "deploy",
+  "title": "배포·운영 도감",
+  "description": "도메인 연결, 환경 변수, CI/CD, 로그 확인까지. 만든 것을 세상에 내놓을 때 막히는 지점 모음.",
+  "intro": "처음 배포하면 코드보다 설정에서 막힙니다. '로컬에선 되는데 배포하면 안 돼요'를 원인 순서로 정리했습니다. 호스팅 서비스의 정책·요금은 자주 바뀌니 공식 문서를 함께 확인하세요.",
+  "sections": [
+    { "name": "어디에 올릴까", "items": [
+      { "term": "정적 사이트는 어디에 올리나요", "short": "정적 호스팅(Cloudflare Pages, Netlify, Vercel, GitHub Pages 등)을 씁니다.", "detail": "HTML·CSS·JS 파일만 있으면 서버가 필요 없습니다. GitHub 저장소를 연결하면 push 할 때마다 자동으로 빌드·배포됩니다. 무료 한도와 상업적 이용 조건은 서비스마다 달라 확인이 필요합니다." },
+      { "term": "서버(백엔드)가 필요하면요", "short": "서버리스 함수, PaaS, VPS 중에서 고릅니다.", "detail": "작은 API 는 서버리스 함수(Cloudflare Workers, Vercel Functions 등), 상시 실행 서버는 PaaS(Render, Railway, Fly.io 등), 직접 관리하려면 VPS(AWS Lightsail 등)입니다. 처음엔 관리 부담이 적은 쪽이 좋습니다." },
+      { "term": "빌드 명령과 출력 폴더는 뭔가요", "short": "호스팅이 소스를 어떻게 완성품으로 만들지 알려 주는 설정입니다.", "example": "빌드 명령: npm run build\n출력 폴더: dist (Next.js 는 .next, CRA 는 build)", "detail": "프레임워크마다 출력 폴더가 다릅니다. 빌드는 성공했는데 빈 화면이면 출력 폴더 지정이 틀린 경우가 많습니다." }
+    ]},
+    { "name": "도메인·HTTPS", "items": [
+      { "term": "내 도메인을 연결하고 싶어요", "short": "DNS 에 CNAME(또는 A) 레코드를 추가합니다.", "example": "www  CNAME  내프로젝트.pages.dev", "detail": "호스팅 화면에 안내되는 값을 도메인 등록 업체(또는 Cloudflare)의 DNS 설정에 넣습니다. 루트 도메인(example.com)은 CNAME 이 제한되는 업체가 있어 www 로 리다이렉트하는 방법이 흔합니다. 반영에는 몇 분~몇 시간이 걸릴 수 있습니다." },
+      { "term": "연결했는데 '안전하지 않음'이 떠요", "short": "인증서 발급이 끝나기를 기다리거나 DNS 가 틀렸습니다.", "detail": "DNS 가 맞으면 보통 자동 발급됩니다. 프록시(주황 구름)·CAA 레코드·이전 호스팅의 레코드가 남아 있으면 막힐 수 있습니다." },
+      { "term": "HTTP 402 / 한도 초과가 나와요", "short": "호스팅 무료 한도나 결제 문제입니다.", "detail": "대시보드의 사용량·결제 상태를 확인합니다. 한도가 문제면 요금제 변경이나 다른 호스팅 이전을 검토합니다." }
+    ]},
+    { "name": "환경 변수·설정", "items": [
+      { "term": "배포하니 API 가 안 불러져요", "short": "호스팅 쪽에 환경 변수를 따로 넣어야 합니다.", "detail": ".env 는 저장소에 올리지 않으므로 호스팅 대시보드의 Environment Variables 에 같은 이름으로 등록합니다. 값을 바꾼 뒤에는 다시 배포해야 반영되는 경우가 많습니다." },
+      { "term": "로컬은 되는데 서버에서만 'Cannot find module'", "short": "대소문자·devDependencies·락 파일을 봅니다.", "detail": "Windows/macOS 는 파일 이름 대소문자를 구분하지 않지만 Linux 서버는 구분합니다. 또 빌드에 필요한 패키지를 devDependencies 에 넣었는데 서버가 개발 의존성을 설치하지 않는 설정일 수 있습니다." },
+      { "term": "Node 버전 때문에 빌드가 실패해요", "short": "호스팅의 Node 버전을 프로젝트와 맞춥니다.", "detail": "package.json 의 engines, .nvmrc, 또는 호스팅 설정의 NODE_VERSION 으로 지정합니다." }
+    ]},
+    { "name": "자동화 (CI/CD)", "items": [
+      { "term": "CI/CD 가 뭔가요", "short": "push 할 때마다 검사·빌드·배포를 자동으로 돌리는 것입니다.", "detail": "CI 는 테스트·린트·빌드 확인, CD 는 배포 자동화입니다. 사람이 하는 실수(테스트 안 돌리고 올리기)를 줄입니다." },
+      { "term": "GitHub Actions 를 처음 써 보고 싶어요", "short": ".github/workflows/ 에 YAML 을 둡니다.", "example": "name: ci\non: [push, pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20 }\n      - run: npm ci\n      - run: npm test", "detail": "Actions 탭에서 실행 결과와 로그를 봅니다. 비밀 값은 저장소 Settings > Secrets 에 넣고 ${{ secrets.이름 }} 으로 씁니다. 포크 PR 에는 secrets 가 전달되지 않습니다." },
+      { "term": "매일·매주 자동으로 돌리고 싶어요", "short": "schedule(cron) 트리거를 씁니다.", "example": "on:\n  schedule:\n    - cron: \"0 0 * * 1\"  # 매주 월요일 00:00 UTC", "detail": "시간은 UTC 기준이고 정확히 그 시각이 아니라 조금 늦게 시작될 수 있습니다. 한국 시간(KST)은 UTC+9 입니다." }
+    ]},
+    { "name": "운영", "items": [
+      { "term": "배포 후 문제가 생기면 어떻게 되돌리나요", "short": "이전 배포로 롤백합니다.", "detail": "대부분의 호스팅은 이전 배포를 한 번에 되살리는 기능이 있습니다. 또는 문제 커밋을 git revert 로 되돌려 다시 push 합니다. 데이터 구조(마이그레이션)를 바꾼 경우는 코드만 되돌려서는 안 맞을 수 있으니 변경을 작게 나눕니다." },
+      { "term": "서버 로그는 어디서 보나요", "short": "호스팅 대시보드의 Logs, 또는 서버에서 docker logs/journalctl.", "detail": "에러를 사용자가 알려 주길 기다리지 말고 Sentry 같은 오류 수집 도구나 로그를 확인하는 습관을 둡니다. 로그에 비밀번호·토큰·개인정보를 찍지 않습니다." },
+      { "term": "서비스가 살아 있는지 자동으로 확인하고 싶어요", "short": "헬스 체크 주소와 모니터링을 둡니다.", "example": "GET /health  →  200 OK", "detail": "UptimeRobot 같은 무료 도구로 주소를 주기적으로 호출해 죽으면 알림을 받습니다. 접속이 되는지만 보지 말고 핵심 기능까지 확인하면 더 좋습니다." },
+      { "term": "내 서비스에 방문자가 얼마나 오는지 알고 싶어요", "short": "분석 도구를 붙입니다.", "detail": "Google Analytics, Cloudflare Web Analytics, Plausible 등이 있습니다. 쿠키·개인정보 안내와 지역별 동의 규정을 함께 확인하세요." }
+    ]}
+  ]
+}

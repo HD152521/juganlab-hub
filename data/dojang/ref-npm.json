@@ -1,0 +1,31 @@
+{
+  "slug": "npm",
+  "title": "npm·Node 도감",
+  "description": "패키지 설치 오류, 버전 충돌, 스크립트 실행 등 Node.js 프로젝트에서 자주 막히는 상황 모음.",
+  "intro": "'설치했는데 안 돼요' 류의 상황을 원인 순서로 정리했습니다. 오류 메시지의 맨 위 줄보다 'Caused by' 나 마지막 줄에 단서가 있는 경우가 많습니다.",
+  "sections": [
+    { "name": "시작하기", "items": [
+      { "term": "새 프로젝트를 시작하고 싶어요", "short": "package.json 을 만듭니다.", "example": "npm init -y", "detail": "package.json 은 프로젝트 이름, 스크립트, 의존성 목록을 담은 설명서입니다." },
+      { "term": "남이 올린 프로젝트를 받아서 실행하고 싶어요", "short": "의존성을 설치한 뒤 스크립트를 실행합니다.", "example": "git clone 주소\ncd 폴더\nnpm install\nnpm run dev", "detail": "README 의 실행 방법을 먼저 봅니다. Node 버전이 정해져 있으면 .nvmrc 나 package.json 의 engines 에 적혀 있습니다." },
+      { "term": "package.json 의 scripts 는 뭔가요", "short": "자주 쓰는 명령에 짧은 이름을 붙인 것입니다.", "example": "\"scripts\": { \"dev\": \"vite\", \"build\": \"vite build\", \"test\": \"node --test\" }", "detail": "npm run 이름 으로 실행합니다. start, test 는 run 을 생략할 수 있습니다." }
+    ]},
+    { "name": "설치와 버전", "items": [
+      { "term": "dependencies 와 devDependencies 차이", "short": "실행에 필요한가, 개발할 때만 필요한가입니다.", "example": "npm install express\nnpm install -D eslint", "detail": "배포 서버에서 npm install --omit=dev 로 개발용 패키지를 빼면 가벼워집니다. 테스트·린터·빌드 도구는 보통 -D 입니다." },
+      { "term": "package-lock.json 은 지워도 되나요", "short": "지우지 말고 커밋합니다.", "detail": "락 파일은 모든 사람이 똑같은 버전을 설치하게 고정합니다. CI 에서는 npm install 대신 npm ci 를 쓰면 락 파일 그대로 깨끗이 설치합니다." },
+      { "term": "^1.2.3 과 ~1.2.3 의 차이", "short": "허용하는 업데이트 범위가 다릅니다.", "detail": "^1.2.3 은 1.x.x 중 1.2.3 이상(메이저 고정), ~1.2.3 은 1.2.x 중 1.2.3 이상(마이너 고정)입니다. 숫자 앞에 기호가 없으면 정확히 그 버전입니다." },
+      { "term": "어떤 패키지가 오래됐는지 보고 싶어요", "short": "outdated 와 audit 를 씁니다.", "example": "npm outdated\nnpm audit", "detail": "npm audit fix 는 호환되는 범위에서만 고칩니다. --force 는 메이저 버전을 올려 앱이 깨질 수 있으니 변경 내용을 읽고 씁니다." }
+    ]},
+    { "name": "오류 해결", "items": [
+      { "term": "'Cannot find module' 가 나와요", "short": "설치가 안 됐거나 경로·이름이 틀렸습니다.", "detail": "순서: 1) 철자·대소문자(Windows 는 무시해도 Linux 서버는 구분) 2) npm install 했는지 3) 상대 경로(./) 4) ESM/CommonJS 불일치. 대소문자 문제는 로컬에선 되고 배포하면 깨지는 대표 원인입니다." },
+      { "term": "ERESOLVE 의존성 충돌이 나요", "short": "패키지끼리 요구하는 버전이 서로 맞지 않습니다.", "example": "npm ls 충돌패키지", "detail": "메시지에 어떤 패키지가 어떤 버전을 원하는지 적혀 있습니다. 한쪽을 올리거나 내려 맞추는 것이 정석이고, --legacy-peer-deps 는 임시 우회입니다." },
+      { "term": "node_modules 가 꼬인 것 같아요", "short": "지우고 다시 설치합니다.", "example": "rm -rf node_modules\nnpm install", "detail": "락 파일까지 지우는 것은 마지막 수단입니다. 지우면 버전이 전부 새로 계산되어 예전에 되던 것이 깨질 수 있습니다." },
+      { "term": "'require is not defined' / 'Cannot use import'", "short": "CommonJS 와 ESM 이 섞였습니다.", "detail": "package.json 에 \"type\": \"module\" 이 있으면 import/export, 없으면 require 가 기본입니다. 파일 확장자 .mjs 는 항상 ESM, .cjs 는 항상 CommonJS 입니다." },
+      { "term": "Node 버전이 달라서 안 돼요", "short": "프로젝트가 요구하는 버전으로 맞춥니다.", "example": "node -v\nnvm use 20", "detail": "nvm(Windows 는 nvm-windows), fnm, volta 같은 버전 관리자를 쓰면 프로젝트마다 버전을 바꿀 수 있습니다." }
+    ]},
+    { "name": "실무 습관", "items": [
+      { "term": "패키지를 설치하기 전에 확인할 것", "short": "정말 필요한지, 믿을 만한지 봅니다.", "detail": "주간 다운로드 수, 마지막 업데이트 시점, 저장소 활동, 이름 철자(비슷한 이름으로 위장한 악성 패키지가 있습니다)를 봅니다. 작은 기능이면 직접 짜는 쪽이 의존성 부담이 적을 수 있습니다." },
+      { "term": "npx 는 뭔가요", "short": "설치하지 않고 패키지의 실행 파일을 한 번 실행합니다.", "example": "npx create-vite@latest", "detail": "처음 보는 패키지를 npx 로 실행하면 그 코드가 내 컴퓨터에서 돕니다. 출처를 확인하세요." },
+      { "term": ".gitignore 에 꼭 넣을 것", "short": "node_modules, .env, 빌드 결과물.", "example": "node_modules/\n.env\ndist/", "detail": "node_modules 는 npm install 로 다시 만들 수 있으므로 커밋하지 않습니다. .env 는 비밀 값이 들어 있어 절대 올리면 안 됩니다." }
+    ]}
+  ]
+}
