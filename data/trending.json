@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-25T23:36:11.524Z",
+  "updatedAt": "2026-11-26T23:47:34.717Z",
   "topics": [
     "agent-skills",
     "claude-skills",
@@ -55,51 +55,76 @@
     ]
   },
   "daily": {
-    "date": "2026-11-26",
+    "date": "2026-11-27",
     "items": [
       {
-        "name": "erkamyaman/rea-games",
-        "url": "https://github.com/erkamyaman/rea-games",
-        "description": "Reverse-engineer any game, rebuild it in any engine (web, Rust, Godot) and prove the rebuild plays the same, frame by frame. Behavior specs in the open GAME.md format.",
-        "stars": 187,
+        "name": "nexu-io/opengame",
+        "url": "https://github.com/nexu-io/opengame",
+        "description": "The Super Game Agent — the Unity & Unreal for AI agents, with 100+ viral games to remix. Turn 20+ coding agents (Claude Code, Codex, DeepSeek, etc.) into a full-stack AI game studio. Build and publish",
+        "stars": 812,
+        "language": "TypeScript",
+        "created": "2026-11-25"
+      },
+      {
+        "name": "Moh4696/inkworks-skill",
+        "url": "https://github.com/Moh4696/inkworks-skill",
+        "description": "Inkworks: an agent skill for interactive 3D how-it-works pages drawn like an engineering sheet.",
+        "stars": 443,
         "language": "JavaScript",
         "created": "2026-11-25"
       },
       {
-        "name": "matheusmongarde/garimpo",
-        "url": "https://github.com/matheusmongarde/garimpo",
-        "description": "Prospecção open source do Google Maps ao Pix: acha negócios no Maps, gera um site-prévia com o nome de cada um, conversa no WhatsApp e cobra por Pix, Mercado Pago ou Stripe. Pagou, fecha sozinho. Roda",
-        "stars": 173,
-        "language": "TypeScript",
-        "created": "2026-11-24"
+        "name": "gary23w/f-ck_data_brokers",
+        "url": "https://github.com/gary23w/f-ck_data_brokers",
+        "description": "fck_data_brokers.py is a free, open-source Python script that sends opt-out and deletion requests to data brokers on your behalf.",
+        "stars": 346,
+        "language": "Python",
+        "created": "2026-11-26"
       },
       {
-        "name": "Lukcla3889/postman-agent",
-        "url": "https://github.com/Lukcla3889/postman-agent",
-        "description": "Postman Agent for Windows 10/11. Runs API requests and collections on your local machine, letting you send calls to localhost, inspect responses and debug endpoints without leaving the desktop.",
-        "stars": 169,
-        "language": "",
-        "created": "2026-11-24"
+        "name": "erkamyaman/rea-games",
+        "url": "https://github.com/erkamyaman/rea-games",
+        "description": "Reverse-engineer any game, rebuild it in any engine (web, Rust, Godot) and prove the rebuild plays the same, frame by frame. Behavior specs in the open GAME.md format.",
+        "stars": 307,
+        "language": "JavaScript",
+        "created": "2026-11-25"
       },
       {
-        "name": "Locorreia1992/native-instruments-reaktor-6",
-        "url": "https://github.com/Locorreia1992/native-instruments-reaktor-6",
-        "description": "Native Instruments Reaktor 6 for Windows 10/11. Builds custom synths, samplers and effects by patching modules in a visual modular environment, or plays and tweaks thousands of prebuilt instruments an",
-        "stars": 163,
+        "name": "uxpilot-ai/frontend-design-skill",
+        "url": "https://github.com/uxpilot-ai/frontend-design-skill",
+        "description": "Free frontend design skill for Claude Code, Codex and Cursor: designs your UI on a UX Pilot canvas, then builds it in your code",
+        "stars": 195,
         "language": "",
-        "created": "2026-11-24"
-      },
-      {
-        "name": "kofimehta06/capture-one-23",
-        "url": "https://github.com/kofimehta06/capture-one-23",
-        "description": "Capture One 23 for Windows 10/11. Edits RAW photos with precise color, exposure and layer adjustments, tethers your camera for instant review and exports finished images for client delivery or print.",
-        "stars": 160,
-        "language": "",
-        "created": "2026-11-24"
+        "created": "2026-11-25"
       }
     ]
   },
   "history": [
+    {
+      "date": "2026-11-27",
+      "items": [
+        {
+          "name": "nexu-io/opengame",
+          "stars": 812
+        },
+        {
+          "name": "Moh4696/inkworks-skill",
+          "stars": 443
+        },
+        {
+          "name": "gary23w/f-ck_data_brokers",
+          "stars": 346
+        },
+        {
+          "name": "erkamyaman/rea-games",
+          "stars": 307
+        },
+        {
+          "name": "uxpilot-ai/frontend-design-skill",
+          "stars": 195
+        }
+      ]
+    },
     {
       "date": "2026-11-26",
       "items": [
