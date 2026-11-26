@@ -206,7 +206,7 @@
     }
 
     if (!('IntersectionObserver' in window)) return;
-    const targets = document.querySelectorAll('.section-head, #market-grid .exp, .principle, .contact');
+    const targets = document.querySelectorAll('.section-head, #market-grid .exp, .principle');
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {

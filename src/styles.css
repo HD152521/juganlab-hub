@@ -417,31 +417,6 @@ a.exp:hover .exp-cta span {
   font-size: 0.98rem;
 }
 
-/* ── 연락 ─────────────────────────────── */
-
-.contact {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-  padding: clamp(28px, 4vw, 48px);
-  border-radius: calc(var(--radius) + 6px);
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.contact h2 {
-  margin: 0 0 6px;
-  font-size: clamp(1.4rem, 1.1rem + 1.2vw, 2rem);
-  letter-spacing: -0.02em;
-}
-
-.contact p {
-  margin: 0;
-  opacity: 0.7;
-}
-
 .mail {
   padding: 14px 22px;
   border-radius: 999px;
@@ -472,6 +447,18 @@ a.exp:hover .exp-cta span {
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 12px;
+}
+
+.footer-contact {
+  flex-basis: 100%;
+  margin: 0 0 8px;
+}
+
+.footer .footer-contact a {
+  margin-left: 6px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .footer a {
