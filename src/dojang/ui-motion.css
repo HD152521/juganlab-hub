@@ -10,14 +10,14 @@
 
 /* fade-up */
 .dm-fade-up-card { width: min(100%, 280px); padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-.dm-fade-up-tag { display: inline-block; padding: 2px 8px; font: 600 11px var(--font-mono); letter-spacing: .08em; color: var(--signal); background: var(--signal-soft); border-radius: 99px; }
+.dm-fade-up-tag { display: inline-block; padding: 2px 8px; font: 600 11px var(--font-mono); letter-spacing: .08em; color: var(--signal-text); background: var(--signal-soft); border-radius: 99px; }
 .dm-fade-up-title { margin: 12px 0 6px; font-size: 18px; line-height: 1.3; }
 .dm-fade-up-text { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-soft); }
 
 /* stagger */
 .dm-stagger-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: min(100%, 360px); }
 .dm-stagger-tile { aspect-ratio: 1; display: grid; place-items: center; font: 600 16px var(--font-mono); color: var(--ink-soft); background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
-.dm-stagger-tile.is-first { background: var(--signal); border-color: var(--signal); color: #fff; }
+.dm-stagger-tile.is-first { background: var(--signal); border-color: var(--signal); color: var(--on-signal); }
 
 /* spring */
 .dm-spring-view { gap: 8px; place-items: stretch; grid-template-rows: 1fr auto; }

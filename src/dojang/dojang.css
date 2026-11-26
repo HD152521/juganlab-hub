@@ -50,7 +50,7 @@
 }
 
 .dm-section-title .mono {
-  color: var(--signal);
+  color: var(--signal-text);
 }
 
 /* 항목 카드 */
@@ -85,7 +85,7 @@
 
 .dm-item h3 a:hover,
 .dm-item h3 a:focus-visible {
-  color: var(--signal);
+  color: var(--signal-text);
   outline: none;
 }
 
@@ -201,7 +201,7 @@
 
 .dm-list.bad li::before {
   content: '✕';
-  color: var(--signal);
+  color: var(--signal-text);
 }
 
 .dm-tip {
@@ -388,7 +388,7 @@
 }
 
 .rf-heading .mono {
-  color: var(--signal);
+  color: var(--signal-text);
   font-size: 0.8em;
 }
 
@@ -430,7 +430,7 @@
 
 .rf-term a:hover,
 .rf-term a:focus-visible {
-  color: var(--signal);
+  color: var(--signal-text);
 }
 
 .rf-body {
@@ -572,7 +572,7 @@
 
 .dm-more summary:hover,
 .dm-more summary:focus-visible {
-  color: var(--signal);
+  color: var(--signal-text);
   outline: none;
 }
 

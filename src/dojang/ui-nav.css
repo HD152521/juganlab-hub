@@ -16,7 +16,7 @@
 .dm-kebab-btn, .dm-meatball-btn { width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; color: var(--ink-soft); cursor: pointer; display: grid; place-items: center; transition: background .2s var(--ease), transform .15s var(--ease), color .2s; }
 .dm-kebab-btn:hover, .dm-meatball-btn:hover { background: var(--signal-soft); color: var(--ink); }
 .dm-kebab-btn:active, .dm-meatball-btn:active { transform: scale(.88); }
-.dm-kebab-btn[aria-expanded="true"], .dm-meatball-btn[aria-expanded="true"] { background: var(--signal-soft); color: var(--signal); }
+.dm-kebab-btn[aria-expanded="true"], .dm-meatball-btn[aria-expanded="true"] { background: var(--signal-soft); color: var(--signal-text); }
 .dm-kebab-btn:focus-visible, .dm-meatball-btn:focus-visible, .dm-kebab-item:focus-visible, .dm-meatball-item:focus-visible,
 .dm-veggie-burger-btn:focus-visible, .dm-donut-item:focus-visible, .dm-top-tabs-tab:focus-visible, .dm-top-tabs-panel:focus-visible,
 .dm-pagination-btn:focus-visible, .dm-paging-vs-infinite-pbtn:focus-visible, .dm-paging-vs-infinite-scroll:focus-visible,
@@ -32,7 +32,7 @@
 .dm-kebab-menu.is-up, .dm-meatball-menu.is-up { top: auto; bottom: calc(100% + 2px); transform-origin: bottom right; }
 .dm-kebab-item, .dm-meatball-item { display: block; width: 100%; padding: 9px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); font: inherit; font-size: 0.86rem; text-align: left; cursor: pointer; transition: background .15s; }
 .dm-kebab-item:hover, .dm-kebab-item:focus-visible, .dm-meatball-item:hover, .dm-meatball-item:focus-visible { background: var(--signal-soft); }
-.dm-kebab-item.is-danger, .dm-meatball-item.is-danger { color: var(--signal); }
+.dm-kebab-item.is-danger, .dm-meatball-item.is-danger { color: var(--signal-text); }
 @keyframes dm-nav-pop { from { opacity: 0; transform: scale(.9) translateY(-4px); } to { opacity: 1; transform: none; } }
 
 .dm-kebab-status, .dm-meatball-status, .dm-veggie-burger-status, .dm-fab-status { margin-top: 12px; font-size: 0.8rem; color: var(--ink-soft); font-family: var(--font-mono); min-height: 1.2em; }
@@ -43,7 +43,7 @@
 .dm-meatball-crumbitem + .dm-meatball-crumbitem::before { content: "/"; margin: 0 6px; color: var(--ink-faint); }
 .dm-meatball-crumbitem.is-new { animation: dm-nav-pop .3s var(--ease); }
 .dm-meatball-link { color: var(--ink-soft); text-decoration: none; border-radius: 4px; }
-a.dm-meatball-link:hover { color: var(--signal); text-decoration: underline; }
+a.dm-meatball-link:hover { color: var(--signal-text); text-decoration: underline; }
 span.dm-meatball-link { color: var(--ink); font-weight: 600; }
 .dm-meatball-btn.is-small { width: 28px; height: 28px; border: 1px solid var(--line); background: var(--card); }
 .dm-meatball-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: visible; }
@@ -64,7 +64,7 @@ span.dm-meatball-link { color: var(--ink); font-weight: 600; }
 .dm-veggie-burger-line:nth-child(1) { top: 14px; }
 .dm-veggie-burger-line:nth-child(2) { top: 21px; }
 .dm-veggie-burger-line:nth-child(3) { top: 28px; }
-.is-open .dm-veggie-burger-btn { color: var(--signal); }
+.is-open .dm-veggie-burger-btn { color: var(--signal-text); }
 .is-open .dm-veggie-burger-line:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .is-open .dm-veggie-burger-line:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .is-open .dm-veggie-burger-line:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
@@ -155,9 +155,9 @@ span.dm-meatball-link { color: var(--ink); font-weight: 600; }
 .dm-fab-actions { display: grid; gap: 8px; justify-items: end; }
 .dm-fab-mini { padding: 9px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); font: inherit; font-size: 0.84rem; cursor: pointer; box-shadow: var(--shadow); opacity: 0; transform: translateY(14px) scale(.9); visibility: hidden; transition: opacity .2s, transform .3s var(--ease), visibility 0s .3s; }
 .is-open .dm-fab-mini { opacity: 1; transform: none; visibility: visible; transition: opacity .2s calc(var(--i) * 50ms), transform .35s var(--ease) calc(var(--i) * 50ms), visibility 0s; }
-.dm-fab-mini:hover { border-color: var(--signal); color: var(--signal); }
+.dm-fab-mini:hover { border-color: var(--signal); color: var(--signal-text); }
 .dm-fab-mini:active { transform: scale(.94); }
-.dm-fab-main { width: 54px; height: 54px; border: 0; border-radius: 50%; background: var(--signal); color: #fff; cursor: pointer; box-shadow: var(--shadow); display: grid; place-items: center; transition: transform .35s var(--ease); }
+.dm-fab-main { width: 54px; height: 54px; border: 0; border-radius: 50%; background: var(--signal); color: var(--on-signal); cursor: pointer; box-shadow: var(--shadow); display: grid; place-items: center; transition: transform .35s var(--ease); }
 .dm-fab-main:active { transform: scale(.9); }
 .is-open .dm-fab-main { transform: rotate(135deg); }
 .dm-fab-plus { position: relative; width: 20px; height: 20px; }
@@ -170,7 +170,7 @@ span.dm-meatball-link { color: var(--ink); font-weight: 600; }
 .dm-floating-vs-bottom-fixed-scroll.has-bar { padding-bottom: 66px; }
 .dm-floating-vs-bottom-fixed-item { padding: 10px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
 .dm-floating-vs-bottom-fixed-it { font-size: 0.78rem; }
-.dm-floating-vs-bottom-fixed-fab { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 4px; height: 42px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--signal); color: #fff; font: inherit; font-size: 0.82rem; cursor: pointer; box-shadow: var(--shadow); transition: transform .15s var(--ease), padding .3s var(--ease); }
+.dm-floating-vs-bottom-fixed-fab { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 4px; height: 42px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--signal); color: var(--on-signal); font: inherit; font-size: 0.82rem; cursor: pointer; box-shadow: var(--shadow); transition: transform .15s var(--ease), padding .3s var(--ease); }
 .dm-floating-vs-bottom-fixed-fabi { font-size: 1.2rem; line-height: 1; }
 .dm-floating-vs-bottom-fixed-fabl { max-width: 60px; overflow: hidden; white-space: nowrap; transition: max-width .3s var(--ease), opacity .2s; }
 .dm-floating-vs-bottom-fixed-fab.is-compact { padding: 0 12px; }

@@ -10,10 +10,10 @@
 .dm-anchoring-card { display: grid; gap: 8px; align-content: start; padding: 16px 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
 .dm-anchoring-card.is-anchor { border-color: var(--signal); box-shadow: var(--shadow); }
 .dm-anchoring-tag { font: 600 11px var(--font-mono); letter-spacing: .06em; color: var(--ink-faint); }
-.dm-anchoring-card.is-anchor .dm-anchoring-tag { color: var(--signal); }
+.dm-anchoring-card.is-anchor .dm-anchoring-tag { color: var(--signal-text); }
 .dm-anchoring-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 26px; font-size: 14px; color: var(--ink-faint); }
 .dm-anchoring-top-empty { font-size: 12px; font-family: var(--font-mono); }
-.dm-anchoring-badge { padding: 2px 8px; font: 600 12px var(--font-mono); color: #fff; background: var(--signal); border-radius: 99px; }
+.dm-anchoring-badge { padding: 2px 8px; font: 600 12px var(--font-mono); color: var(--on-signal); background: var(--signal); border-radius: 99px; }
 .dm-anchoring-badge.is-none { color: var(--ink-soft); background: var(--paper-deep); }
 .dm-anchoring-badge.pop { animation: dm-anchoring-pop .35s var(--ease); }
 .dm-anchoring-price { font: 700 clamp(22px, 6vw, 28px) var(--font-mono); font-variant-numeric: tabular-nums; }
@@ -41,7 +41,7 @@
 .dm-peak-end-tag { fill: var(--signal); font: 600 10px var(--font-sans); }
 .dm-peak-end-tag.is-last { fill: var(--live); }
 .dm-peak-end-ask { display: flex; flex-wrap: wrap; gap: 8px; }
-.dm-peak-end-ask .dm-btn.is-on { background: var(--signal); border-color: var(--signal); color: #fff; }
+.dm-peak-end-ask .dm-btn.is-on { background: var(--signal); border-color: var(--signal); color: var(--on-signal); }
 .dm-peak-end-bar { padding-top: 10px; border-top: 1px dashed var(--line); }
 .dm-peak-end-result { display: grid; gap: 10px; }
 .dm-peak-end-result:empty { display: none; }
