@@ -2873,3 +2873,12 @@ a.exp-slot:hover .ph-slot, a.exp-slot:focus-visible .ph-slot { color: var(--sign
 .section-head { grid-template-columns: 1fr; gap: 6px; margin-bottom: 24px; }
 .finder input { border-width: 1px; border-color: var(--line); box-shadow: none; padding: 13px 20px; font-size: 1rem; }
 .finder input:focus { transform: none; border-color: var(--signal); box-shadow: 0 0 0 3px var(--signal-soft); }
+
+/* ── 작품 목록 전용 페이지(/works) ───────────── */
+.works { padding-top: 40px; padding-bottom: var(--space-section); }
+.works-head { margin-bottom: 24px; }
+.works-head h1 { margin: 6px 0 8px; font-size: clamp(1.6rem, 1.3rem + 1.2vw, 2.1rem); line-height: 1.25; letter-spacing: -0.025em; }
+.works-head .doc-lede { margin: 0; color: var(--ink-soft); max-width: 60ch; }
+.works-note { margin: 28px 0 0; color: var(--ink-faint); font-size: 0.86rem; line-height: 1.6; max-width: 70ch; }
+.works-note a { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
+.market-all { margin: 20px 0 0; }

@@ -8,10 +8,11 @@ import { fileURLToPath } from 'node:url';
 import { renderAbout, renderLogIndex, renderPost } from './lib/pages.mjs';
 import { readDojang, renderDojangIndex, renderRef, renderUiDojang } from './lib/dojang.mjs';
 import { renderLearn, renderSubmit } from './lib/learn.mjs';
+import { renderWorks } from './lib/works.mjs';
 import { readAiGuides, renderAiIndex } from './lib/ai.mjs';
 import { readTrending, renderTrending } from './lib/trending.mjs';
 import { buildSearchIndex, renderHeroMeta as renderHomeMeta, renderToolbox } from './lib/home.mjs';
-import { hasEnglish, renderEnHome, renderEnProject, renderEnSubmit } from './lib/en.mjs';
+import { hasEnglish, renderEnHome, renderEnWorks, renderEnProject, renderEnSubmit } from './lib/en.mjs';
 import { CATEGORIES, categoryOf, renderCheck, renderProject, statusText, TYPE_LABEL, typeOf } from './lib/projects.mjs';
 import { renderCard, renderHow, renderMarketBar, renderMoreButton, renderSlot } from './lib/market.mjs';
 import { howtoOf, screenshotsOf, validateMedia } from './lib/media.mjs';
@@ -125,8 +126,10 @@ const koItem = (s, entryCount, check) => {
 // 기본 순서는 최신순(since 내림차순, 날짜 없으면 뒤). 같으면 데이터 순서.
 const newestFirst = (services) => [...services].sort((a, b) => (b.since ?? '').localeCompare(a.since ?? ''));
 
-function renderMarket(services, entriesOf, checks) {
-  const sorted = newestFirst(services);
+const HOME_COUNT = 6; // 홈에는 최신 작품 몇 개만. 전체는 /works
+
+function renderMarket(services, entriesOf, checks, limit = Infinity) {
+  const sorted = newestFirst(services).slice(0, limit);
   return [...sorted.map((sv, i) => renderCard(koItem(sv, entriesOf(sv.id).length, checks[sv.id]), i, 'ko')), renderSlot('ko', '/submit')].join('\n');
 }
 
@@ -218,7 +221,9 @@ function sitemapPages(sortedLog, posts, dojang, aiGuides, services) {
     { path: '/trending' },
     ...(aiGuides.length ? [{ path: '/ai' }, ...aiGuides.map((g) => ({ path: `/ai/${g.slug}` }))] : []),
     { path: '/submit' },
+    { path: '/works' },
     { path: '/en' },
+    { path: '/en/works' },
     { path: '/en/submit' },
     ...services.filter(hasEnglish).map((sv) => ({ path: `/en/p/${sv.id}` })),
     { path: '/dojang' },
@@ -259,9 +264,8 @@ function build() {
 
   const parts = {
     heroMeta: renderHomeMeta(services, posts, dojang, aiGuides),
-    services: renderMarket(services, entriesOf, checks),
-    marketFilters: renderMarketControls(services),
-    marketMore: renderMoreButton('ko'),
+    services: renderMarket(services, entriesOf, checks, HOME_COUNT),
+    marketAll: `      <p class="market-all"><a class="ghost-link" href="/works">전체 작품 ${services.length}개 보기 <span aria-hidden="true">→</span></a></p>`,
     how: renderHow('ko', '/submit'),
     toolbox: renderToolbox(dojang, aiGuides, trending),
     data: renderData(services),
@@ -279,11 +283,16 @@ function build() {
   for (const sv of services) writeFileSync(join(DIST, 'p', `${sv.id}.html`), renderProject(sv, entriesOf(sv.id), checks[sv.id], parts.adHead));
   writeDojang(dojang, parts.adHead);
   writeFileSync(join(DIST, 'learn.html'), renderLearn(dojang, posts, parts.adHead));
+  writeFileSync(
+    join(DIST, 'works.html'),
+    renderWorks({ barHtml: renderMarketControls(services), cardsHtml: renderMarket(services, entriesOf, checks), moreHtml: renderMoreButton('ko'), total: services.length, adHead: parts.adHead }),
+  );
   writeFileSync(join(DIST, 'submit.html'), renderSubmit(parts.adHead));
   // 영어 페이지: 영어 소개가 있는 작품만
   mkdirSync(join(DIST, 'en', 'p'), { recursive: true });
   writeFileSync(join(DIST, 'en.html'), renderEnHome(services, checks, parts.adHead));
   writeFileSync(join(DIST, 'en', 'submit.html'), renderEnSubmit(parts.adHead));
+  writeFileSync(join(DIST, 'en', 'works.html'), renderEnWorks(services, checks, parts.adHead));
   for (const sv of services.filter(hasEnglish)) writeFileSync(join(DIST, 'en', 'p', `${sv.id}.html`), renderEnProject(sv, checks[sv.id], parts.adHead));
   if (aiGuides.length) {
     mkdirSync(join(DIST, 'ai'), { recursive: true });
