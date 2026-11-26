@@ -2924,6 +2924,5 @@ a.exp-slot:hover .ph-slot, a.exp-slot:focus-visible .ph-slot { color: var(--sign
 }
 .market-all .ghost-link:hover, .market-all .ghost-link:focus-visible { border-color: var(--signal); color: var(--signal); }
 
-/* 검색 띠와 첫 섹션 사이 간격, 썸네일 종류 라벨은 가운데 */
+/* 검색 띠와 첫 섹션 사이 간격 */
 .finder-band { padding-bottom: 28px; }
-.ph-kind { left: 0; right: 0; bottom: 10px; text-align: center; }
