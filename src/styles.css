@@ -2882,3 +2882,48 @@ a.exp-slot:hover .ph-slot, a.exp-slot:focus-visible .ph-slot { color: var(--sign
 .works-note { margin: 28px 0 0; color: var(--ink-faint); font-size: 0.86rem; line-height: 1.6; max-width: 70ch; }
 .works-note a { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
 .market-all { margin: 20px 0 0; }
+
+/* ── 홈 통일: 검색은 작품·도구함 위, 도구함은 선으로 나눈 목록, 전체 보기는 같은 화살표 글자 링크 ── */
+.finder-band { padding-top: 8px; }
+.finder-band .finder { margin: 0; max-width: 720px; }
+
+.toolbox { display: block; border-top: 2px solid var(--ink); }
+.tool {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-areas: "n title meta" "n desc meta";
+  column-gap: 16px;
+  row-gap: 4px;
+  align-items: baseline;
+  padding: 20px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.tool:hover, .tool:focus-visible { transform: none; background: var(--signal-soft); }
+.tool-n { grid-area: n; }
+.tool h3 { grid-area: title; }
+.tool p { grid-area: desc; }
+.tool-meta { grid-area: meta; margin: 0; padding: 0; white-space: nowrap; align-self: center; color: var(--ink-soft); }
+.tool:hover .tool-meta, .tool:focus-visible .tool-meta { color: var(--signal); }
+@media (max-width: 640px) {
+  .tool { grid-template-columns: 36px minmax(0, 1fr); grid-template-areas: "n title" "n desc" "n meta"; }
+  .tool-meta { align-self: start; padding-top: 6px; }
+}
+
+.market-all { margin: 20px 0 0; }
+.market-all .ghost-link {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+  font-family: var(--mono, ui-monospace, monospace);
+  color: var(--ink-soft);
+}
+.market-all .ghost-link:hover, .market-all .ghost-link:focus-visible { border-color: var(--signal); color: var(--signal); }
+
+/* 검색 띠와 첫 섹션 사이 간격, 썸네일 종류 라벨은 가운데 */
+.finder-band { padding-bottom: 28px; }
+.ph-kind { left: 0; right: 0; bottom: 10px; text-align: center; }

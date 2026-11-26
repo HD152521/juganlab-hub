@@ -79,6 +79,14 @@
       </div>
     </section>
 
+    <div class="wrap finder-band">
+      <form class="finder" id="finder" role="search" autocomplete="off">
+        <label class="visually-hidden" for="finder-input">작품·도구함 전체 검색</label>
+        <input id="finder-input" type="search" placeholder="작품·도구함 전체 검색 (예: 모달, 프롬프트, 정규식)" aria-controls="finder-out">
+        <ul class="finder-out" id="finder-out" role="listbox" hidden></ul>
+      </form>
+    </div>
+
     <section id="market" class="section wrap" aria-labelledby="market-title">
       <div class="section-head">
         <span class="mono">01 / Works</span>
@@ -97,11 +105,6 @@
         <h2 id="tool-title">만드는 사람을 위한 도구함</h2>
       </div>
       <p class="section-lede">개발이 처음이어도 막히지 않도록 모아 둔 자료입니다. 작품 없이 이것만 써도 됩니다.</p>
-      <form class="finder" id="finder" role="search" autocomplete="off">
-        <label class="visually-hidden" for="finder-input">작품·도구함 전체 검색</label>
-        <input id="finder-input" type="search" placeholder="도구함·작품 전체 검색 (예: 모달, 프롬프트, 정규식)" aria-controls="finder-out">
-        <ul class="finder-out" id="finder-out" role="listbox" hidden></ul>
-      </form>
       <div class="toolbox">
 <!-- @toolbox -->
       </div>
