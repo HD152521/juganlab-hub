@@ -10,7 +10,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { analyzeManifest, checkResponse, checkUrl, scanSource, summarize } from '../lib/checks.mjs';
+import { analyzeManifest, checkResponse, checkUrl, redactSecrets, sanitizeLog, scanSource, summarize } from '../lib/checks.mjs';
+import { safeHead, timedText } from '../lib/safe-fetch.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SERVICES = join(ROOT, 'data', 'services.json');
@@ -21,33 +22,30 @@ const STALE_DAYS = 7;
 const MAX_SOURCE_FILES = 30;
 const MAX_SOURCE_BYTES = 150_000;
 
+// 검사한 주소 묶음. 작품 주소나 링크가 하나라도 바뀌면 7일이 안 지났어도 다시 검사한다(검사 후 바꿔치기 방지)
+const checkKey = (s) => [s.url ?? '', ...(s.links ?? []).map((l) => l.url)].join('|');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const daysBetween = (a, b) => Math.floor((Date.parse(b) - Date.parse(a)) / 86_400_000);
 
-async function timed(url, init = {}, ms = 12_000) {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), ms);
-  try {
-    return await fetch(url, { ...init, signal: ctl.signal });
-  } finally {
-    clearTimeout(t);
-  }
-}
+// 고정된 신뢰 호스트(GitHub·Google·VirusTotal) 호출. 시간·크기 제한은 lib/safe-fetch.mjs
+const timed = timedText;
+
+// 오류 문장에서 비밀 값을 가리고 한 줄로 만든다(로그·checks.json 에 들어가므로)
+const SECRET_ENV = ['GSB_API_KEY', 'VT_API_KEY', 'GITHUB_TOKEN'];
+const errText = (error) => sanitizeLog(redactSecrets(error instanceof Error ? error.message : error, SECRET_ENV.map((k) => process.env[k])));
 
 // ── 접속 확인 ──
 async function checkReachable(url, label) {
   try {
-    const res = await timed(url, { redirect: 'follow', headers: { 'user-agent': 'juganlab-check/1.0 (+https://juganlab.com)' } });
+    // 리다이렉트는 직접 따라가며 매번 내부 주소·형식을 검사한다(SSRF 방어)
+    const res = await safeHead(url);
     const fails = checkResponse(
-      { status: res.status, contentType: res.headers.get('content-type') ?? '', disposition: res.headers.get('content-disposition') ?? '' },
+      { status: res.status, contentType: String(res.headers['content-type'] ?? ''), disposition: String(res.headers['content-disposition'] ?? '') },
       label,
     );
-    const finalUrl = new URL(res.url);
-    if (finalUrl.protocol !== 'https:') fails.push(`${label}: 이동한 주소가 https 가 아닙니다`);
-    res.body?.cancel();
     return { fails, notes: fails.length ? [] : [`${label} 접속 확인(HTTP ${res.status})`] };
   } catch (error) {
-    return { fails: [`${label}: 접속하지 못했습니다(${error instanceof Error ? error.message : error})`], notes: [] };
+    return { fails: [`${label}: 접속하지 못했습니다(${errText(error)})`], notes: [] };
   }
 }
 
@@ -56,9 +54,10 @@ async function safeBrowsing(urls) {
   const key = process.env.GSB_API_KEY;
   if (!key) return { fails: [], notes: ['Google Safe Browsing 검사는 건너뜀(키 없음)'] };
   try {
-    const res = await timed(`https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${encodeURIComponent(key)}`, {
+    const res = await timed('https://safebrowsing.googleapis.com/v4/threatMatches:find', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      // 키를 주소에 넣으면 오류·로그에 남기 쉬우므로 헤더로 보낸다
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
         client: { clientId: 'juganlab-check', clientVersion: '1.0' },
         threatInfo: {
@@ -77,7 +76,7 @@ async function safeBrowsing(urls) {
     }
     return { fails: [], notes: ['Google Safe Browsing 위험 표시 없음'] };
   } catch (error) {
-    return { fails: [], notes: [`Google Safe Browsing 검사는 건너뜀(${error instanceof Error ? error.message : error})`] };
+    return { fails: [], notes: [`Google Safe Browsing 검사는 건너뜀(${errText(error)})`] };
   }
 }
 
@@ -106,7 +105,7 @@ async function virusTotal(url) {
     }
     return { fails: [], warns: [], notes: ['VirusTotal 검사는 건너뜀(시간 초과)'] };
   } catch (error) {
-    return { fails: [], warns: [], notes: [`VirusTotal 검사는 건너뜀(${error instanceof Error ? error.message : error})`] };
+    return { fails: [], warns: [], notes: [`VirusTotal 검사는 건너뜀(${errText(error)})`] };
   }
 }
 
@@ -127,12 +126,12 @@ async function checkExtension(service) {
     const repoRes = await timed(`https://api.github.com/repos/${owner}/${repo}`, { headers: ghHeaders() });
     if (!repoRes.ok) return { fails: [`저장소를 읽을 수 없습니다(HTTP ${repoRes.status})`], warns: [], notes: [] };
     const branch = (await repoRes.json()).default_branch;
-    const treeRes = await timed(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`, { headers: ghHeaders() });
+    const treeRes = await timed(`https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`, { headers: ghHeaders() }, { maxBytes: 5_000_000 });
     if (!treeRes.ok) return { fails: [], warns: [], notes: ['소스 검사는 건너뜀(파일 목록을 읽지 못함)'] };
     const files = (await treeRes.json()).tree?.filter((f) => f.type === 'blob') ?? [];
     const manifestPath = files.map((f) => f.path).filter((p) => /(^|\/)manifest\.json$/.test(p) && !p.includes('node_modules/')).sort((a, b) => a.length - b.length)[0];
     if (!manifestPath) return { fails: ['저장소에서 manifest.json 을 찾지 못했습니다'], warns: [], notes: [] };
-    const raw = (p) => timed(`https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${p}`);
+    const raw = (p) => timed(`https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(branch)}/${p.split('/').map(encodeURIComponent).join('/')}`, {}, { maxBytes: 400_000 });
     const manifest = JSON.parse(await (await raw(manifestPath)).text());
     const result = analyzeManifest(manifest);
 
@@ -148,7 +147,7 @@ async function checkExtension(service) {
     result.notes.push(`소스 파일 ${sources.length}개 훑어봄(휴리스틱)`);
     return result;
   } catch (error) {
-    return { fails: [], warns: [], notes: [`소스 검사는 건너뜀(${error instanceof Error ? error.message : error})`] };
+    return { fails: [], warns: [], notes: [`소스 검사는 건너뜀(${errText(error)})`] };
   }
 }
 
@@ -185,15 +184,15 @@ async function main() {
 
   for (const s of services) {
     const prev = previous[s.id];
-    const fresh = prev && prev.url === (s.url ?? '') && prev.result !== 'fail' && daysBetween(prev.date, TODAY) < STALE_DAYS;
+    const fresh = prev && prev.key === checkKey(s) && prev.result !== 'fail' && daysBetween(prev.date, TODAY) < STALE_DAYS;
     if (fresh && !args.has('--all')) {
       next[s.id] = prev;
       console.log(`- ${s.id}: ${prev.date} 검사 결과 유지`);
       continue;
     }
-    const result = { url: s.url ?? '', ...(await checkService(s)) };
+    const result = { url: s.url ?? '', key: checkKey(s), ...(await checkService(s)) };
     console.log(`- ${s.id}: ${result.result}`);
-    for (const item of result.items) console.log(`    ${item}`);
+    for (const item of result.items) console.log(`    ${sanitizeLog(item)}`);
     if (result.result === 'fail') failed += 1;
     next[s.id] = result;
   }
@@ -210,6 +209,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
+  console.error(errText(error));
   process.exit(1);
 });
