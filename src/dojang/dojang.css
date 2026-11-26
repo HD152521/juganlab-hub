@@ -25,8 +25,7 @@
   margin: 32px 0 24px;
 }
 
-.dm-chips,
-.rf-toc {
+.dm-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -304,46 +303,175 @@
   transform: translate(-50%, 0);
 }
 
-/* 개발 참고 도감 */
+/* 개발 참고 도감: 사전식 편집 레이아웃. 상자 없이 얇은 선·여백·글자 크기로 나눈다. */
+
+.rf-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 72px);
+  margin-top: 36px;
+  align-items: start;
+}
+
+.rf-side {
+  position: sticky;
+  top: 84px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.rf-search input {
+  width: 100%;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.rf-search input:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 4px;
+}
+
+.rf-toc {
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rf-toc a {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0 7px 12px;
+  border-left: 2px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 0.93rem;
+  text-decoration: none;
+  word-break: keep-all;
+}
+
+.rf-toc a .mono {
+  font-size: 0.74rem;
+  color: var(--ink-faint);
+}
+
+.rf-toc .rf-count {
+  margin-left: auto;
+}
+
+.rf-toc a:hover,
+.rf-toc a:focus-visible,
+.rf-toc a[aria-current='true'] {
+  border-left-color: var(--signal);
+  color: var(--ink);
+}
+
+.rf-toc a[aria-current='true'] {
+  font-weight: 700;
+}
+
+.rf-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 0 0 4px;
+  padding-top: 18px;
+  border-top: 2px solid var(--ink);
+  font-size: clamp(1.4rem, 1.1rem + 1vw, 1.9rem);
+  letter-spacing: -0.02em;
+  scroll-margin-top: 84px;
+}
+
+.rf-heading .mono {
+  color: var(--signal);
+  font-size: 0.8em;
+}
+
+.rf-section {
+  margin-bottom: 56px;
+  scroll-margin-top: 84px;
+}
 
 .rf-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-  gap: 16px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .rf-item {
-  padding: 20px 22px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--card);
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: 8px clamp(20px, 3vw, 40px);
+  padding: 22px 0;
+  border-bottom: 1px solid var(--line);
+  scroll-margin-top: 84px;
 }
 
-.rf-item h3 {
+.rf-item:target .rf-term a {
+  box-shadow: inset 0 -0.45em 0 var(--signal-soft);
+}
+
+.rf-term {
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 1.05rem;
-  letter-spacing: -0.01em;
-  word-break: break-word;
+  font-size: 1rem;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.rf-term a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.rf-term a:hover,
+.rf-term a:focus-visible {
+  color: var(--signal);
+}
+
+.rf-body {
+  min-width: 0;
 }
 
 .rf-short {
-  margin: 6px 0 0;
-  font-weight: 600;
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.6;
+  word-break: keep-all;
 }
 
 .rf-detail {
   margin: 12px 0 0;
+  max-width: 62ch;
   color: var(--ink-soft);
   font-size: 0.93rem;
+  line-height: 1.7;
+  word-break: keep-all;
 }
 
 .rf-code {
   position: relative;
   margin-top: 12px;
+}
+
+.rf-code pre {
+  margin: 0;
+  padding: 12px 64px 12px 16px;
+  overflow: auto;
+  border-left: 3px solid var(--signal);
+  border-radius: 0 6px 6px 0;
+  background: #151a24;
+  color: #e6ebf3;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .rf-code .dm-btn {
@@ -352,6 +480,41 @@
   right: 8px;
   padding: 3px 12px;
   font-size: 0.78rem;
+}
+
+@media (max-width: 900px) {
+  .rf-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .rf-side {
+    position: static;
+    max-height: none;
+  }
+  .rf-toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 18px;
+  }
+  .rf-toc a {
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+    padding: 4px 0;
+  }
+  .rf-toc a:hover,
+  .rf-toc a[aria-current='true'] {
+    border-bottom-color: var(--signal);
+  }
+  .rf-toc .rf-count {
+    display: none;
+  }
+  .rf-item {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 18px 0;
+  }
+  .rf-term {
+    font-size: 1.02rem;
+  }
 }
 
 @media (max-width: 720px) {
@@ -568,11 +731,4 @@ main.dm-page {
   .dm-grid .dm-item .dm-tools { order: 3; justify-content: flex-end; }
   .dm-grid .dm-item > .dm-more { order: 4; }
   .dm-grid .dm-item > .dm-code { order: 5; }
-}
-
-/* 긴 예시(프롬프트)는 줄바꿈하고, 복사 버튼이 글자를 가리지 않게 위쪽 여백을 둔다 */
-.rf-code pre {
-  padding-top: 38px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }

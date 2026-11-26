@@ -39,4 +39,30 @@
     sections.forEach((s) => (s.hidden = !s.querySelector('.rf-item:not([hidden])')));
     if (empty) empty.hidden = shown !== 0;
   });
+
+  // "/" 로 검색창 이동, Esc 로 비우기
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !/^(input|textarea|select)$/i.test(document.activeElement?.tagName ?? '') && search) {
+      e.preventDefault();
+      search.focus();
+    }
+  });
+  search?.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      search.value = '';
+      search.dispatchEvent(new Event('input'));
+    }
+  });
+
+  // 목차: 지금 읽는 섹션 표시
+  const links = [...document.querySelectorAll('.rf-toc a')];
+  if (links.length && 'IntersectionObserver' in window) {
+    const byId = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+    const mark = (id) => links.forEach((a) => (a === byId.get(id) ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((en) => en.isIntersecting && mark(en.target.id)),
+      { rootMargin: '-80px 0px -65% 0px' },
+    );
+    sections.forEach((s) => io.observe(s));
+  }
 })();
