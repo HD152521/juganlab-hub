@@ -1324,25 +1324,6 @@ kbd {
   display: none;
 }
 
-.market-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 28px;
-}
-
-.market-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.market-filters:empty {
-  display: none;
-}
-
 .market-search input {
   width: min(320px, 100%);
   padding: 10px 16px;
@@ -2708,12 +2689,6 @@ h1, h2, h3 { word-break: keep-all; text-wrap: balance; }
 }
 
 /* ── 작품 목록: 작은 카드로 한눈에 ── */
-.market-bar { display: grid; gap: 12px; margin-bottom: 20px; }
-.market-filters { display: grid; gap: 8px; }
-.market-row { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip-n { margin-left: 4px; opacity: 0.55; }
-.market-chip[data-empty] { opacity: 0.5; }
-.market-chip[data-empty][aria-pressed='true'] { opacity: 1; }
 .market-search input { width: 100%; max-width: 360px; }
 
 .experiments { grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 12px; }
@@ -2785,22 +2760,32 @@ h1, h2, h3 { word-break: keep-all; text-wrap: balance; }
 .how-note { margin: 12px 0 0; padding-top: 12px; border-top: 1px dashed var(--line); color: var(--ink-faint); font-size: 0.82rem; }
 .how-note a { color: var(--signal-text); white-space: nowrap; }
 
-/* ── 작품 탐색 막대 ── */
-.market-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-bottom: 10px; }
-.market-search { flex: 1 1 220px; }
-.market-search input { width: 100%; max-width: none; }
-.market-types { display: flex; flex-wrap: wrap; gap: 6px; }
-.market-sel { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-faint); }
-.market-sel select { padding: 9px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); font: inherit; font-size: 0.9rem; max-width: 100%; }
-.market-sel select:focus-visible, .market-more:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+/* ── 작품 탐색 막대: 종류 탭 + 검색·정렬, 그 아래 분야 버튼 ── */
+.market-bar { display: block; margin-bottom: 20px; }
+.market-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; border-bottom: 1px solid var(--line); }
+.market-tabs { display: flex; gap: 22px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.market-tab { flex: none; margin-bottom: -1px; padding: 12px 2px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--ink-faint); font: inherit; font-weight: 600; cursor: pointer; }
+.market-tab:hover { color: var(--ink); }
+.market-tab[aria-pressed='true'] { border-bottom-color: var(--signal); color: var(--ink); }
+.chip-n { margin-left: 4px; font-weight: 400; opacity: 0.55; }
+.market-tools { display: flex; flex: 0 1 420px; align-items: center; gap: 8px; padding-bottom: 8px; }
+.market-bar .market-search { flex: 1; min-width: 0; }
+.market-bar .market-search input { width: 100%; max-width: none; padding: 8px 14px; font-size: 0.9rem; }
+.market-sort select { padding: 8px 4px; border: 0; background: transparent; color: var(--ink-soft); font: inherit; font-size: 0.9rem; cursor: pointer; }
+.market-sort option { background: var(--card); color: var(--ink); }
+.market-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.market-cat { padding: 6px 13px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink-soft); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.market-cat:hover { border-color: var(--ink-faint); color: var(--ink); }
+.market-cat[aria-pressed='true'] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.market-tab:focus-visible, .market-cat:focus-visible, .market-sort select:focus-visible, .market-more:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.market-tab:focus-visible { outline-offset: -2px; }
 .market-count { margin: 0 0 14px; color: var(--ink-faint); }
 .market-more-wrap { margin: 24px 0 0; text-align: center; }
 .market-more { padding: 12px 26px; border: 1px solid var(--ink); border-radius: 999px; background: transparent; color: var(--ink); cursor: pointer; text-transform: none; letter-spacing: 0.02em; font-family: var(--font-mono); }
 .market-more:hover { background: var(--ink); color: var(--paper); }
 .market-more[hidden] { display: none; }
 @media (max-width: 640px) {
-  .market-sel { flex: 1 1 140px; }
-  .market-sel select { flex: 1; min-width: 0; }
+  .market-tools { flex-basis: 100%; }
 }
 
 /* ── 작품 카드: 대표 이미지 + 본문 ── */

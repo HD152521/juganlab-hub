@@ -10,8 +10,8 @@
   const cards = [...grid.querySelectorAll('.exp[data-type]')];
   const slot = grid.querySelector('[data-slot]');
   const typeChips = [...bar.querySelectorAll('[data-type-filter]')];
+  const catChips = [...bar.querySelectorAll('[data-cat-filter]')];
   const search = document.getElementById('market-search');
-  const catSel = document.getElementById('market-cat');
   const sortSel = document.getElementById('market-sort');
   const count = document.getElementById('market-count');
   const empty = document.getElementById('market-empty');
@@ -27,11 +27,11 @@
   };
 
   let type = 'all';
+  let cat = 'all';
   let limit = pageSize;
 
   const render = () => {
     const q = (search?.value || '').trim().toLowerCase();
-    const cat = catSel?.value || 'all';
     const filtering = Boolean(q) || type !== 'all' || cat !== 'all';
     const matched = cards
       .filter((c) => (type === 'all' || c.dataset.type === type) && (cat === 'all' || c.dataset.cat === cat) && (!q || c.dataset.search.includes(q)))
@@ -48,7 +48,11 @@
     });
     if (slot) slot.hidden = filtering;
 
-    if (count) count.textContent = tpl(filtering ? 'tFound' : 'tTotal', matched.length);
+    // 전체 개수는 탭에 이미 있으므로, 거르는 중에만 개수 줄을 눈에 보이게 한다.
+    if (count) {
+      count.textContent = tpl(filtering ? 'tFound' : 'tTotal', matched.length);
+      count.classList.toggle('visually-hidden', !filtering);
+    }
     if (empty) empty.hidden = matched.length !== 0;
     if (more) {
       const rest = matched.length - limit;
@@ -62,15 +66,18 @@
     render();
   };
 
-  typeChips.forEach((chip) =>
-    chip.addEventListener('click', () => {
-      type = chip.dataset.typeFilter;
-      typeChips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
-      reset();
-    }),
-  );
+  // 한 묶음에서 하나만 눌린다. 누른 값을 apply 로 넘긴다.
+  const choose = (chips, key, apply) =>
+    chips.forEach((chip) =>
+      chip.addEventListener('click', () => {
+        apply(chip.dataset[key]);
+        chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+        reset();
+      }),
+    );
+  choose(typeChips, 'typeFilter', (v) => (type = v));
+  choose(catChips, 'catFilter', (v) => (cat = v));
   search?.addEventListener('input', reset);
-  catSel?.addEventListener('change', reset);
   sortSel?.addEventListener('change', reset);
   more?.addEventListener('click', () => {
     // 더 보기를 누르면 새로 나온 첫 카드로 초점을 옮긴다(키보드 사용자가 길을 잃지 않게)
