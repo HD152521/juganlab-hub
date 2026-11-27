@@ -260,7 +260,7 @@
           .filter((s) => s.url)
           .map((s) => [`open ${s.id}`, { desc: `${s.name} 로 이동`, run: () => go(s.url) }]),
       ),
-      learn: { desc: '배우기(UI 도감·개발 참고)로 이동', run: () => go('/learn') },
+      learn: { desc: '개발 참고로 이동', run: () => go('/learn') },
       log: { desc: '실험 일지로 이동', run: () => go('#log') },
       about: { desc: '소개로 이동', run: () => go('#about') },
       contact: { desc: '메일 보내기', run: () => go('mailto:wkdrndydtlr@gmail.com') },
