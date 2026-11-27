@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-26T23:47:34.717Z",
+  "updatedAt": "2026-11-27T23:24:40.783Z",
   "topics": [
     "agent-skills",
     "claude-skills",
@@ -55,51 +55,76 @@
     ]
   },
   "daily": {
-    "date": "2026-11-27",
+    "date": "2026-11-28",
     "items": [
-      {
-        "name": "nexu-io/opengame",
-        "url": "https://github.com/nexu-io/opengame",
-        "description": "The Super Game Agent — the Unity & Unreal for AI agents, with 100+ viral games to remix. Turn 20+ coding agents (Claude Code, Codex, DeepSeek, etc.) into a full-stack AI game studio. Build and publish",
-        "stars": 812,
-        "language": "TypeScript",
-        "created": "2026-11-25"
-      },
-      {
-        "name": "Moh4696/inkworks-skill",
-        "url": "https://github.com/Moh4696/inkworks-skill",
-        "description": "Inkworks: an agent skill for interactive 3D how-it-works pages drawn like an engineering sheet.",
-        "stars": 443,
-        "language": "JavaScript",
-        "created": "2026-11-25"
-      },
       {
         "name": "gary23w/f-ck_data_brokers",
         "url": "https://github.com/gary23w/f-ck_data_brokers",
         "description": "fck_data_brokers.py is a free, open-source Python script that sends opt-out and deletion requests to data brokers on your behalf.",
-        "stars": 346,
+        "stars": 631,
         "language": "Python",
         "created": "2026-11-26"
       },
       {
-        "name": "erkamyaman/rea-games",
-        "url": "https://github.com/erkamyaman/rea-games",
-        "description": "Reverse-engineer any game, rebuild it in any engine (web, Rust, Godot) and prove the rebuild plays the same, frame by frame. Behavior specs in the open GAME.md format.",
-        "stars": 307,
-        "language": "JavaScript",
-        "created": "2026-11-25"
+        "name": "sergiobanhos/generate-icons",
+        "url": "https://github.com/sergiobanhos/generate-icons",
+        "description": "Agent skill that draws an original icon library matching your design system (React, Vue, Svelte, React Native, SVG).",
+        "stars": 173,
+        "language": "Python",
+        "created": "2026-11-26"
       },
       {
-        "name": "uxpilot-ai/frontend-design-skill",
-        "url": "https://github.com/uxpilot-ai/frontend-design-skill",
-        "description": "Free frontend design skill for Claude Code, Codex and Cursor: designs your UI on a UX Pilot canvas, then builds it in your code",
-        "stars": 195,
-        "language": "",
-        "created": "2026-11-25"
+        "name": "f/family-migration-story",
+        "url": "https://github.com/f/family-migration-story",
+        "description": "Soy ağacından kaynaklı aile tarihi raporu ve Türkçe seslendirmeli göç haritası videosu üreten Claude Code skill'i",
+        "stars": 121,
+        "language": "Python",
+        "created": "2026-11-26"
+      },
+      {
+        "name": "Emirborovac/phone-connector-for-claude",
+        "url": "https://github.com/Emirborovac/phone-connector-for-claude",
+        "description": "Give your Claude a phone: one-command Android emulator setup and a Claude Code skill to operate any app, with you in control.",
+        "stars": 94,
+        "language": "Python",
+        "created": "2026-11-27"
+      },
+      {
+        "name": "emmaaraujo/claude-code-pro-patcher-installer",
+        "url": "https://github.com/emmaaraujo/claude-code-pro-patcher-installer",
+        "description": "Claude Code (2026) Windows x64 Trainer, Mod Loader, PE32+ in-memory IAT/EAT signatur & Automated installation directory Utility",
+        "stars": 92,
+        "language": "Go",
+        "created": "2026-11-27"
       }
     ]
   },
   "history": [
+    {
+      "date": "2026-11-28",
+      "items": [
+        {
+          "name": "gary23w/f-ck_data_brokers",
+          "stars": 631
+        },
+        {
+          "name": "sergiobanhos/generate-icons",
+          "stars": 173
+        },
+        {
+          "name": "f/family-migration-story",
+          "stars": 121
+        },
+        {
+          "name": "Emirborovac/phone-connector-for-claude",
+          "stars": 94
+        },
+        {
+          "name": "emmaaraujo/claude-code-pro-patcher-installer",
+          "stars": 92
+        }
+      ]
+    },
     {
       "date": "2026-11-27",
       "items": [
